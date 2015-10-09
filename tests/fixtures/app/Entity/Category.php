@@ -7,31 +7,19 @@
 
 namespace App\Entity;
 
-use Vegas\ODM\EntityInterface;
+use Vegas\ODM\Collection;
 
-class Test implements EntityInterface
+class Category extends Collection
 {
-    protected $id;
-
+    /**
+     * @var string
+     */
     protected $name;
 
+    /**
+     * @var string
+     */
     protected $desc;
-
-    /**
-     * @return mixed
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * @param mixed $id
-     */
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
 
     /**
      * @return mixed
@@ -67,11 +55,6 @@ class Test implements EntityInterface
 
     public function getSource()
     {
-        return 'vegas_app_test';
-    }
-
-    public function getRepository()
-    {
-        return 'App\Repository\TestRepository';
+        return 'vegas_app_categories';
     }
 }

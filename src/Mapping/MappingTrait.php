@@ -19,14 +19,20 @@ trait MappingTrait
         return md5($className . $value);
     }
 
-    private function mapField($className, $value)
+    private function mapField($type, $value)
     {
-        $cacheKey = $this->getCacheKey($className, $value);
+        $cacheKey = $this->getCacheKey($type, $value);
         if (!isset($this->cache[$cacheKey])) {
-            $class = new \ReflectionClass($className);
-            $this->cache[$cacheKey] = $class->getMethod('getMapped')->invoke(null, $value);
+            if (ScalarMapper::isScalar($type)) {
+                $this->cache[$cacheKey] = ScalarMapper::map($value, $type);
+            } else {
+                $class = new \ReflectionClass($type);
+                $this->cache[$cacheKey] = $class->getMethod('getMapped')->invoke(null, $value);
+            }
+
         }
-        return clone $this->cache[$cacheKey];
+
+        return is_object($this->cache[$cacheKey]) ? clone $this->cache[$cacheKey] : $this->cache[$cacheKey];
     }
 
     public function applyMapping()

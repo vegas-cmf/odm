@@ -10,7 +10,7 @@
  * file that was distributed with this source code.
  */
  
-namespace Vegas\ODM\Adapter\Mongo;
+namespace Vegas\ODM\Mongo;
 
 /**
  * Class DbRef
@@ -27,7 +27,7 @@ namespace Vegas\ODM\Adapter\Mongo;
  * $doc->creator = \Vegas\ODM\Adapter\Mongo\DbRef::create('User', $user->getId());
  * </code>
  *
- * @package Goplato\Db\Adapter\Mongo
+ * @package Vegas\ODM\Mongo
  * @return array
  */
 class DbRef extends \MongoDBRef

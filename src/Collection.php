@@ -8,13 +8,38 @@
 namespace Vegas\ODM;
 
 
-use Vegas\ODM\Adapter\Mongo\DbRef;
+use Vegas\ODM\Mapping\ScalarMapper;
+use Vegas\ODM\Mongo\DbRef;
 use Vegas\ODM\Collection\LazyLoadingCursor;
-use Vegas\ODM\Traits\WriteAttributesTrait;
+use Vegas\ODM\Mapping\MapperInterface;
+use Vegas\ODM\Mapping\MappingTrait;
+use Vegas\ODM\Mapping\MetadataExtractorTrait;
+use Vegas\ODM\Collection\Traits\WriteAttributesTrait;
 
-class Collection extends \Phalcon\Mvc\Collection
+class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 {
     use WriteAttributesTrait;
+
+    use MappingTrait;
+
+    use MetadataExtractorTrait;
+
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->_id;
+    }
+
+    /**
+     * @param mixed $id
+     */
+    public function setId($id)
+    {
+        $this->_id = $id;
+    }
 
     public function setSource($source)
     {
@@ -43,7 +68,6 @@ class Collection extends \Phalcon\Mvc\Collection
      */
     public function beforeCreate()
     {
-        $this->created_at = new \MongoInt32(time());
     }
 
     /**
@@ -51,7 +75,6 @@ class Collection extends \Phalcon\Mvc\Collection
      */
     public function beforeUpdate()
     {
-        $this->updated_at = new \MongoInt32(time());
     }
 
     public static function getMapped($value)
@@ -152,7 +175,7 @@ class Collection extends \Phalcon\Mvc\Collection
         return $documentsCursor;
     }
 
-    public static function find($parameters = null)
+    public static function find(array $parameters = null)
     {
         $className = get_called_class();
         /** @var Collection $collection */
@@ -162,27 +185,87 @@ class Collection extends \Phalcon\Mvc\Collection
         return new LazyLoadingCursor($cursor, $collection);
     }
 
-    public static function findFirst($parameters = null)
-    {
-        $row = parent::findFirst($parameters);
-        if ($row && static::isEagerLoadingEnabled()) {
-            $row->applyMapping();
-        }
+    public function writeAttribute($a,$v) {
+        $this->{$a} = $v;
+    }
 
-        return $row;
+    public static function findFirst(array $parameters = null)
+    {
+        $className = get_called_class();
+        /** @var Collection $collection */
+        $collection = new $className;
+        $cursor = static::_getResultCursor($parameters, $collection, $collection->getConnection());
+
+        $cursor->next();
+        $collection->writeAttributes((array) $cursor->current());
+        if ($collection::isEagerLoadingEnabled()) {
+            $collection->applyMapping();
+        }
+        return $collection;
     }
 
     public function save()
     {
         $metadata = $this->getMetadata();
+
+        $currentValues = [];
+
         foreach (get_object_vars($this) as $object => $value) {
             if (isset($metadata[$object])) {
-                $reflectionClass = new \ReflectionClass($metadata[$object]);
-                if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                    $this->{$object} = $reflectionClass->getMethod('createReference')->invoke(null, $this->{$object});
+                $currentValues[$object] = $this->{$object};
+                if (ScalarMapper::isScalar($metadata[$object])) {
+                    $this->{$object} = ScalarMapper::map($this->{$object}, $metadata[$object]);
+                } else {
+                    $reflectionClass = new \ReflectionClass($metadata[$object]);
+                    if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
+                        $this->{$object} = $reflectionClass->getMethod('createReference')->invoke(null, $this->{$object});
+                    }
                 }
             }
         }
-        return parent::save();
+
+        $result = parent::save();
+
+        foreach ($currentValues as $object => $value) {
+            $this->{$object} = $value;
+        }
+
+        return $result;
+    }
+
+    public function toArray()
+    {
+        $reserved = $this->getReservedAttributes();
+        $data = [];
+        foreach (get_object_vars($this) as $k => $v) {
+            if (!isset($reserved[$k])) {
+                $data[$k] = $v;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Returns an array with reserved properties that cannot be part of the insert/update
+     */
+    public function getReservedAttributes()
+    {
+        $reserved = self::$_reserved;
+        if ($reserved === null) {
+            $reserved = [
+                "_connection" => true,
+                "_dependencyInjector" => true,
+                "_source" => true,
+                "_operationMade" => true,
+                "_errorMessages" => true,
+                "_modelsManager" => true,
+                "_skipped" => true,
+                "cache" => true,
+                "metadataCache" => true
+            ];
+            self::$_reserved = $reserved;
+        }
+        return $reserved;
     }
 }
