@@ -14,11 +14,9 @@ use Vegas\ODM\Collection\LazyLoadingCursor;
 use Vegas\ODM\Mapping\MapperInterface;
 use Vegas\ODM\Mapping\MappingTrait;
 use Vegas\ODM\Mapping\MetadataExtractorTrait;
-use Vegas\ODM\Collection\Traits\WriteAttributesTrait;
 
 class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 {
-    use WriteAttributesTrait;
 
     use MappingTrait;
 
@@ -97,6 +95,17 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         return '_metadata_' . md5(static::class);
     }
 
+    /**
+     * Simple method that sets attributes from specified array
+     *
+     * @param $attributes
+     */
+    public function writeAttributes($attributes)
+    {
+        foreach ($attributes as $attribute => $value) {
+            $this->writeAttribute($attribute, $value);
+        }
+    }
 
     /**
      * @param $params
