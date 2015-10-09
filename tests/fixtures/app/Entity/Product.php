@@ -31,8 +31,8 @@ class Product extends Collection
     protected $price;
 
     /**
-     * @var \Vegas\ODM\Mapping\Mapper\MongoDate
-     * @Mapper
+     * @var \MongoDate
+     * @Mapper \Vegas\ODM\Mapping\Mapper\MongoDate
      */
     protected $createdAt;
 

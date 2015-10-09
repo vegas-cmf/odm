@@ -54,7 +54,6 @@ class Annotation
                 continue;
             }
         }
-
         $this->annotations = $annotations;
     }
 
@@ -81,12 +80,21 @@ class Annotation
         if (!$this->isValid($matches[1])) {
             throw new AnnotationNotFoundException();
         }
-        $varAnnotationIndex = array_search(self::VAR_ANNOTATION, $matches[1]);
-        if ($varAnnotationIndex === false || !isset($matches[2][$varAnnotationIndex])) {
-            throw new AnnotationNotFoundException();
+        $mapperAnnotationIndex = array_search(self::MAPPER_ANNOTATION, $matches[1]);
+        if ($mapperAnnotationIndex !== false) {
+            $type = trim($matches[2][$mapperAnnotationIndex]);
+        }
+        if (!isset($type) || !$type) {
+            $varAnnotationIndex = array_search(self::VAR_ANNOTATION, $matches[1]);
+            $type = trim($matches[2][$varAnnotationIndex]);
+            if ($varAnnotationIndex === false || !isset($matches[2][$varAnnotationIndex])) {
+                throw new AnnotationNotFoundException();
+            }
+        } else {
+            $type = trim($matches[2][$mapperAnnotationIndex]);
         }
 
-        return trim($matches[2][$varAnnotationIndex]);
+        return $type;
     }
 
     public function getAnnotations()
