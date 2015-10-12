@@ -14,9 +14,22 @@ class Test extends \PHPUnit_Framework_TestCase
 {
     public function testApp()
     {
+        foreach (Category::find() as $category) {
+            $category->delete();
+        }
+        foreach (Product::find() as $product) {
+            $product->delete();
+        }
+
+        $parentCat = new Category();
+        $parentCat->setName('Category 0');
+        $parentCat->setDesc('Category 0 desc');
+        $parentCat->save();
+
         $cat = new Category();
         $cat->setName('Category 1');
         $cat->setDesc('Category 1 is...');
+        $cat->setCategory($parentCat);
         $cat->save();
 
         $prod = new Product();
@@ -33,5 +46,6 @@ class Test extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\MongoDate', $test->getCreatedAt());
         $this->assertInternalType('boolean', $test->isActive());
         $this->assertInternalType('int', $test->getPrice());
+        $this->assertInstanceOf('\App\Entity\Category', $test->getCategory()->getCategory());
     }
 }

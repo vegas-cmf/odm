@@ -7,6 +7,8 @@
 namespace Vegas\ODM\Mapping;
 
 
+use Vegas\ODM\Mapping\Mapper\Scalar;
+
 trait MappingTrait
 {
     private $cache = [];
@@ -19,12 +21,17 @@ trait MappingTrait
         return md5($className . $value);
     }
 
+    /**
+     * @param $type
+     * @param $value
+     * @return mixed
+     */
     private function mapField($type, $value)
     {
         $cacheKey = $this->getCacheKey($type, $value);
         if (!isset($this->cache[$cacheKey])) {
-            if (ScalarMapper::isScalar($type)) {
-                $this->cache[$cacheKey] = ScalarMapper::map($value, $type);
+            if (Scalar::isScalar($type)) {
+                $this->cache[$cacheKey] = Scalar::map($value, $type);
             } else {
                 $class = new \ReflectionClass($type);
                 $this->cache[$cacheKey] = $class->getMethod('getMapped')->invoke(null, $value);

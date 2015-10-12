@@ -7,7 +7,10 @@
 
 namespace Vegas\ODM;
 
-
+/**
+ * Class Exception
+ * @package Vegas\ODM
+ */
 class Exception extends \Exception
 {
 

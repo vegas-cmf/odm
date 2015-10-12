@@ -22,6 +22,12 @@ class Category extends Collection
     protected $desc;
 
     /**
+     * @var \App\Entity\Category
+     * @Mapper
+     */
+    protected $category;
+
+    /**
      * @return mixed
      */
     public function getName()
@@ -51,6 +57,22 @@ class Category extends Collection
     public function setDesc($desc)
     {
         $this->desc = $desc;
+    }
+
+    /**
+     * @return Category
+     */
+    public function getCategory()
+    {
+        return $this->category;
+    }
+
+    /**
+     * @param Category $category
+     */
+    public function setCategory($category)
+    {
+        $this->category = $category;
     }
 
     public function getSource()

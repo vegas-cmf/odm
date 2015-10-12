@@ -1,25 +1,50 @@
 <?php
 /**
- * @author Sławomir Żytko <slawek@amsterdam-standard.pl>
- * @homepage http://amsterdam-standard.pl
+ * This file is part of Vegas package
+ *
+ * @author Slawomir Zytko <slawek@amsterdam-standard.pl>
+ * @copyright Amsterdam Standard Sp. Z o.o.
+ * @homepage http://cmf.vegas
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Vegas\ODM\Mapping\Driver;
 
 use Vegas\ODM\Mapping\Driver\Exception\AnnotationNotFoundException;
 
+/**
+ * Class Annotation
+ * @package Vegas\ODM\Mapping\Driver
+ */
 class Annotation
 {
+    /**
+     * Required annotation
+     */
     const MAPPER_ANNOTATION = '@Mapper';
 
+    /**
+     * Variable type annotation
+     */
     const VAR_ANNOTATION = '@var';
 
+    /**
+     * @var array
+     */
     private $requiredAnnotations = [
         self::MAPPER_ANNOTATION, self::VAR_ANNOTATION
     ];
 
+    /**
+     * @var \ReflectionClass|\ReflectionObject
+     */
     protected $reflection;
 
+    /**
+     * @var array
+     */
     protected $annotations = [];
 
     /**
@@ -31,6 +56,10 @@ class Annotation
         $this->parsePropertiesAnnotation();
     }
 
+    /**
+     * @param $target
+     * @return \ReflectionClass|\ReflectionObject
+     */
     protected function getTargetReflection($target)
     {
         if (is_object($target)) {
@@ -40,6 +69,9 @@ class Annotation
         }
     }
 
+    /**
+     *
+     */
     protected function parsePropertiesAnnotation()
     {
         $annotations = [];
@@ -57,6 +89,10 @@ class Annotation
         $this->annotations = $annotations;
     }
 
+    /**
+     * @param $annotations
+     * @return bool
+     */
     private function isValid($annotations)
     {
         $valid = true;
@@ -70,6 +106,13 @@ class Annotation
         return $valid;
     }
 
+    /**
+     * Extract variable type and search for @mapper annotation
+     *
+     * @param $docBlock
+     * @return string
+     * @throws AnnotationNotFoundException
+     */
     protected function extractMapperAnnotation($docBlock)
     {
         $regex = sprintf("#(%s)(.*?)(\n|\s|\r)#U", implode('|', $this->requiredAnnotations));
@@ -81,6 +124,9 @@ class Annotation
             throw new AnnotationNotFoundException();
         }
         $mapperAnnotationIndex = array_search(self::MAPPER_ANNOTATION, $matches[1]);
+        if ($mapperAnnotationIndex !== false) {
+            $mapperAnnotationIndex = array_search(strtolower(self::MAPPER_ANNOTATION), $matches[1]);
+        }
         if ($mapperAnnotationIndex !== false) {
             $type = trim($matches[2][$mapperAnnotationIndex]);
         }
@@ -97,6 +143,9 @@ class Annotation
         return $type;
     }
 
+    /**
+     * @return array
+     */
     public function getAnnotations()
     {
         return $this->annotations;

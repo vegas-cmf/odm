@@ -1,14 +1,26 @@
 <?php
-
 /**
+ * This file is part of Vegas package
+ *
  * @author Slawomir Zytko <slawek@amsterdam-standard.pl>
- * @company Amsterdam Standard Sp. z o.o.
+ * @copyright Amsterdam Standard Sp. Z o.o.
+ * @homepage http://cmf.vegas
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
-namespace Vegas\ODM\Mapping;
+namespace Vegas\ODM\Mapping\Mapper;
 
-class ScalarMapper
+/**
+ * Class Scalar
+ * @package Vegas\ODM\Mapping\Mapper
+ */
+class Scalar
 {
+    /**
+     * @var array
+     */
     private static $scalarTypes = [
         'int',
         'float',
@@ -16,6 +28,10 @@ class ScalarMapper
         'array'
     ];
 
+    /**
+     * @param $typeName
+     * @return bool
+     */
     public static function isScalar($typeName)
     {
         return in_array($typeName, self::$scalarTypes);
