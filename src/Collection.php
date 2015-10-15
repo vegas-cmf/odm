@@ -4,35 +4,30 @@
  * @company Amsterdam Standard Sp. z o.o.
  */
 
-
 namespace Vegas\ODM;
 
-
-use Vegas\ODM\Mapping\Cache\MappingCacheAwareInterface;
 use Vegas\ODM\Mapping\Mapper\Scalar;
 use Vegas\ODM\Mongo\DbRef;
 use Vegas\ODM\Collection\LazyLoadingCursor;
 use Vegas\ODM\Mapping\MapperInterface;
-use Vegas\ODM\Mapping\MappingTrait;
-use Vegas\ODM\Mapping\MetadataExtractorTrait;
 
+/**
+ * Class Collection
+ * @package Vegas\ODM
+ */
 class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 {
-    use MappingTrait;
-
-    use MetadataExtractorTrait;
-
     /**
      * @var bool
      */
-    protected static $eagerLoading = true;
+    protected static $eagerLoading = [];
 
     /**
      * Disables references eager loading
      */
     public static function disableEagerLoading()
     {
-        static::$eagerLoading = false;
+        static::$eagerLoading[static::class] = false;
     }
 
     /**
@@ -40,17 +35,18 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public static function enableEagerLoading()
     {
-        static::$eagerLoading = true;
+        static::$eagerLoading[static::class] = true;
     }
 
     /**
      * Determines if eager loading is enabled
+     * By default is enabled
      *
      * @return bool
      */
     public static function isEagerLoadingEnabled()
     {
-        return static::$eagerLoading;
+        return isset(static::$eagerLoading[static::class]) ? static::$eagerLoading[static::class]: true;
     }
 
     /**
@@ -71,7 +67,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * @param $value
      * @return \Phalcon\Mvc\Collection
      */
-    public static function getMapped($value)
+    final public static function getMapped($value)
     {
         if (DbRef::isRef($value)) {
             $value = $value['$id'];
@@ -85,17 +81,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * @param $value
      * @return array
      */
-    public static function createReference($value)
+    final public static function createReference($value)
     {
         return DbRef::create($value);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getMetadataCacheKey()
-    {
-        return '_metadata_' . md5(static::class);
     }
 
     /**
@@ -187,7 +175,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         return $documentsCursor;
     }
 
-    public static function find(array $parameters = null)
+    /**
+     * @param array|null $parameters
+     * @return LazyLoadingCursor
+     * @throws \Exception
+     */
+    public static function find($parameters = null)
     {
         $className = get_called_class();
         /** @var Collection $collection */
@@ -197,11 +190,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         return new LazyLoadingCursor($cursor, $collection);
     }
 
-    public function writeAttribute($a,$v) {
-        $this->{$a} = $v;
-    }
-
-    public static function findFirst(array $parameters = null)
+    /**
+     * @param array|null $parameters
+     * @return Collection
+     * @throws \Exception
+     */
+    public static function findFirst($parameters = null)
     {
         $className = get_called_class();
         /** @var Collection $collection */
@@ -216,28 +210,33 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         return $collection;
     }
 
+    /**
+     * @return bool
+     */
     public function save()
     {
         $metadata = $this->getMetadata();
 
         $currentValues = [];
 
-        foreach (get_object_vars($this) as $object => $value) {
-            if (isset($metadata[$object])) {
-                $currentValues[$object] = $this->{$object};
-                if (Scalar::isScalar($metadata[$object])) {
-                    $this->{$object} = Scalar::map($this->{$object}, $metadata[$object]);
-                } else {
-                    $reflectionClass = new \ReflectionClass($metadata[$object]);
-                    if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                        $this->{$object} = $reflectionClass->getMethod('createReference')->invoke(null, $this->{$object});
+        if (!empty($metadata)) {
+            foreach (get_object_vars($this) as $object => $value) {
+                if (isset($metadata[$object])) {
+                    $currentValues[$object] = $this->{$object};
+                    if (Scalar::isScalar($metadata[$object])) {
+                        $this->{$object} = Scalar::map($this->{$object}, $metadata[$object]);
+                    } else {
+                        $reflectionClass = new \ReflectionClass($metadata[$object]);
+                        if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
+                            $this->{$object} = $reflectionClass->getMethod('createReference')->invoke(null, $this->{$object});
+                        }
                     }
                 }
             }
         }
-
         $result = parent::save();
 
+        // rollback origin values to model class
         foreach ($currentValues as $object => $value) {
             $this->{$object} = $value;
         }
@@ -245,6 +244,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         return $result;
     }
 
+    /**
+     * @return array
+     */
     public function toArray()
     {
         $reserved = $this->getReservedAttributes();
@@ -282,16 +284,15 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
-     * @param $value
-     * @return mixed
+     * @var array
      */
-    public function getMappingCacheKey($value)
-    {
-        // TODO: Implement getMappingCacheKey() method.
-    }
-
     private $mappingFieldsCache = [];
 
+    /**
+     * @param $className
+     * @param $value
+     * @return string]
+     */
     private function getCacheKey($className, $value)
     {
         if (!is_string($value)) {
@@ -315,12 +316,15 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 $class = new \ReflectionClass($type);
                 $this->mappingFieldsCache[$cacheKey] = $class->getMethod('getMapped')->invoke(null, $value);
             }
-
         }
 
-        return is_object($this->mappingFieldsCache[$cacheKey]) ? clone $this->mappingFieldsCache[$cacheKey] : $this->mappingFieldsCache[$cacheKey];
+        return is_object($this->mappingFieldsCache[$cacheKey])
+            ? clone $this->mappingFieldsCache[$cacheKey] : $this->mappingFieldsCache[$cacheKey];
     }
 
+    /**
+     *
+     */
     public function applyMapping()
     {
         $metadata = $this->getMetadata();
@@ -331,21 +335,26 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         }
     }
 
+    /**
+     * @return string
+     */
+    protected function getMetadataCacheKey()
+    {
+        return '_metadata_' . md5(static::class);
+    }
 
+    /**
+     * @return array
+     */
     public function getMetadata()
     {
-        $cacheKey = $this->getMetadataCacheKey();
-        if (!isset($this->metadataCache[$cacheKey])) {
-            $this->metadataCache[$cacheKey] = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();
-        }
-        return $this->metadataCache[$cacheKey];
-//        return $annotations = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();;
-        if ($this->getDI()->has('mappingCache')) {
-            $cache = $this->getDI()->get('mappingCache');
+        if ($this->getDI()->has('odmMappingCache')) {
+            $cache = $this->getDI()->get('odmMappingCache');
             $cacheKey = $this->getMetadataCacheKey();
             if (!$cache->exists($cacheKey)) {
                 $annotations = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();
-                $this->getDI()->get('mappingCache')->save($cacheKey, $annotations);
+                print_r($annotations);
+                $this->getDI()->get('odmMappingCache')->save($cacheKey, $annotations);
             } else {
                 $annotations = $cache->get($cacheKey);
             }

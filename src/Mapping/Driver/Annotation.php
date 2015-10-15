@@ -124,7 +124,7 @@ class Annotation
             throw new AnnotationNotFoundException();
         }
         $mapperAnnotationIndex = array_search(self::MAPPER_ANNOTATION, $matches[1]);
-        if ($mapperAnnotationIndex !== false) {
+        if ($mapperAnnotationIndex === false) {
             $mapperAnnotationIndex = array_search(strtolower(self::MAPPER_ANNOTATION), $matches[1]);
         }
         if ($mapperAnnotationIndex !== false) {
@@ -140,7 +140,7 @@ class Annotation
             $type = trim($matches[2][$mapperAnnotationIndex]);
         }
 
-        return $type;
+        return trim($type);
     }
 
     /**

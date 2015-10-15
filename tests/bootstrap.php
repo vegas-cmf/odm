@@ -3,6 +3,9 @@ error_reporting(E_ALL);
 //Test Suite bootstrap
 include __DIR__ . "/../vendor/autoload.php";
 
+use Phalcon\Cache\Backend\File as BackFile;
+use Phalcon\Cache\Frontend\Output as FrontOutput;
+
 define('TESTS_ROOT_DIR', dirname(__FILE__));
 define('APP_ROOT', TESTS_ROOT_DIR . '/fixtures');
 
@@ -21,6 +24,22 @@ $di->set('collectionManager', function() use ($di) {
 $di->set('mongo', function() use ($config) {
     $mongo = new \MongoClient();
     return $mongo->selectDb($config->mongo->db);
+}, true);
+
+$di->set('odmMappingCache', function() use ($di) {
+    $frontCache = new FrontOutput(
+        array(
+            "lifetime" => 3200
+        )
+    );
+    $cache = new BackFile(
+        $frontCache,
+        array(
+            "cacheDir" => __DIR__ . '/cache/'
+        )
+    );
+
+    return $cache;
 }, true);
 
 Phalcon\DI::setDefault($di);
