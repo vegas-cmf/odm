@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 //Test Suite bootstrap
 include __DIR__ . "/../vendor/autoload.php";
 
-use Phalcon\Cache\Backend\File as BackFile;
+use Phalcon\Cache\Backend\Mongo as BackMongo;
 use Phalcon\Cache\Frontend\Output as FrontOutput;
 
 define('TESTS_ROOT_DIR', dirname(__FILE__));
@@ -26,17 +26,15 @@ $di->set('mongo', function() use ($config) {
     return $mongo->selectDb($config->mongo->db);
 }, true);
 
-$di->set('odmMappingCache', function() use ($di) {
-    $frontCache = new FrontOutput(
-        array(
-            "lifetime" => 3200
-        )
+$di->set('odmMappingCache', function() use ($di, $config) {
+    $frontCacheClass = $config->mapping->cache->frontend->driverClass;
+    $frontCache = new $frontCacheClass(
+        $config->mapping->cache->frontend->parameters->toArray()
     );
-    $cache = new BackFile(
+    $backCacheClass = $config->mapping->cache->backend->driverClass;
+    $cache = new $backCacheClass(
         $frontCache,
-        array(
-            "cacheDir" => __DIR__ . '/cache/'
-        )
+        $config->mapping->cache->backend->parameters->toArray()
     );
 
     return $cache;

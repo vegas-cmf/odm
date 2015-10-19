@@ -4,9 +4,7 @@
  * @company Amsterdam Standard Sp. z o.o.
  */
 
-
-namespace App\Entity;
-
+namespace App\Collection;
 
 use Vegas\ODM\Collection;
 use Vegas\ODM\Mapping\Mapper as ODM;
@@ -19,7 +17,7 @@ class Product extends Collection
     protected $name;
 
     /**
-     * @var \App\Entity\Category
+     * @var \App\Collection\Category
      * @Mapper
      */
     protected $category;
@@ -126,5 +124,4 @@ class Product extends Collection
     {
         return 'vegas_app_products';
     }
-
 }

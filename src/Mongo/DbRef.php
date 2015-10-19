@@ -54,6 +54,10 @@ class DbRef extends \MongoDBRef
             $id = new \MongoId($id);
         }
 
+        if ($id === null) {
+            return null;
+        }
+
         return parent::create($collection, $id, $database);
     }
 }

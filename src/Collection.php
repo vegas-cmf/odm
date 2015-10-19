@@ -180,7 +180,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * @return LazyLoadingCursor
      * @throws \Exception
      */
-    public static function find($parameters = null)
+    public static function find(array $parameters = null)
     {
         $className = get_called_class();
         /** @var Collection $collection */
@@ -195,7 +195,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * @return Collection
      * @throws \Exception
      */
-    public static function findFirst($parameters = null)
+    public static function findFirst(array $parameters = null)
     {
         $className = get_called_class();
         /** @var Collection $collection */
@@ -228,12 +228,14 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                     } else {
                         $reflectionClass = new \ReflectionClass($metadata[$object]);
                         if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                            $this->{$object} = $reflectionClass->getMethod('createReference')->invoke(null, $this->{$object});
+                            $this->{$object} = $reflectionClass->getMethod('createReference')
+                                ->invoke(null, $this->{$object});
                         }
                     }
                 }
             }
         }
+
         $result = parent::save();
 
         // rollback origin values to model class
@@ -253,6 +255,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         $data = [];
         foreach (get_object_vars($this) as $k => $v) {
             if (!isset($reserved[$k])) {
+                if (is_object($v) && method_exists($v, 'toArray')) {
+                    $v = $v->toArray();
+                }
                 $data[$k] = $v;
             }
         }
@@ -276,7 +281,10 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 "_modelsManager" => true,
                 "_skipped" => true,
                 "cache" => true,
-                "metadataCache" => true
+                "metadataCache" => true,
+                "di" => true,
+                "_collectionManager" => true,
+                "mappingFieldsCache" => true
             ];
             self::$_reserved = $reserved;
         }
@@ -353,7 +361,6 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $cacheKey = $this->getMetadataCacheKey();
             if (!$cache->exists($cacheKey)) {
                 $annotations = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();
-                print_r($annotations);
                 $this->getDI()->get('odmMappingCache')->save($cacheKey, $annotations);
             } else {
                 $annotations = $cache->get($cacheKey);

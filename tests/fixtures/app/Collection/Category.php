@@ -5,7 +5,7 @@
  * @company Amsterdam Standard Sp. z o.o.
  */
 
-namespace App\Entity;
+namespace App\Collection;
 
 use Vegas\ODM\Collection;
 
@@ -22,7 +22,7 @@ class Category extends Collection
     protected $desc;
 
     /**
-     * @var \App\Entity\Category
+     * @var \App\Collection\Category
      * @Mapper
      */
     protected $category;
