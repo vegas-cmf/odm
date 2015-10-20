@@ -1,6 +1,8 @@
 Vegas CMF ODM
 =============
 
+Compatible with: Phalcon >= 2.0
+
 Example usage
 -------------
 

@@ -24,6 +24,9 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
             $product->delete();
         }
 
+        Category::enableEagerLoading();
+        Product::enableEagerLoading();
+
         // disable cache
         $this->odmMappingCache = Di::getDefault()->get('odmMappingCache');
         Di::getDefault()->remove('odmMappingCache');
