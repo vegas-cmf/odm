@@ -20,6 +20,16 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @var bool
      */
+    private $__operation = false;
+
+    /**
+     * @var bool
+     */
+    public $__eager_loading = true;
+
+    /**
+     * @var bool
+     */
     protected static $eagerLoading = [];
 
     /**
@@ -204,7 +214,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
         $cursor->next();
         $collection->writeAttributes((array) $cursor->current());
-        if ($collection::isEagerLoadingEnabled()) {
+        if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
             $collection->applyMapping();
         }
         return $collection;
@@ -215,21 +225,24 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public function save()
     {
-        $metadata = $this->getMetadata();
+        $this->__operation = 'save';
+        if (static::isEagerLoadingEnabled()) {
+            $metadata = $this->getMetadata();
 
-        $currentValues = [];
+            $currentValues = [];
 
-        if (!empty($metadata)) {
-            foreach (get_object_vars($this) as $object => $value) {
-                if (isset($metadata[$object])) {
-                    $currentValues[$object] = $this->{$object};
-                    if (Scalar::isScalar($metadata[$object])) {
-                        $this->{$object} = Scalar::map($this->{$object}, $metadata[$object]);
-                    } else {
-                        $reflectionClass = new \ReflectionClass($metadata[$object]);
-                        if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                            $this->{$object} = $reflectionClass->getMethod('createReference')
-                                ->invoke(null, $this->{$object});
+            if (!empty($metadata)) {
+                foreach (get_object_vars($this) as $object => $value) {
+                    if (isset($metadata[$object])) {
+                        $currentValues[$object] = $this->{$object};
+                        if (Scalar::isScalar($metadata[$object])) {
+                            $this->{$object} = Scalar::map($this->{$object}, $metadata[$object]);
+                        } else {
+                            $reflectionClass = new \ReflectionClass($metadata[$object]);
+                            if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
+                                $this->{$object} = $reflectionClass->getMethod('createReference')
+                                    ->invoke(null, $this->{$object});
+                            }
                         }
                     }
                 }
@@ -238,11 +251,14 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
         $result = parent::save();
 
-        // rollback origin values to model class
-        foreach ($currentValues as $object => $value) {
-            $this->{$object} = $value;
+        if (static::isEagerLoadingEnabled()) {
+            // rollback origin values to model class
+            foreach ($currentValues as $object => $value) {
+                $this->{$object} = $value;
+            }
         }
 
+        $this->__operation = false;
         return $result;
     }
 
@@ -262,6 +278,10 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             }
         }
 
+        if ($this->__operation === 'save') {
+            $data['__eager_loading'] = static::isEagerLoadingEnabled();
+        }
+
         return $data;
     }
 
@@ -273,18 +293,20 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         $reserved = self::$_reserved;
         if ($reserved === null) {
             $reserved = [
-                "_connection" => true,
-                "_dependencyInjector" => true,
-                "_source" => true,
-                "_operationMade" => true,
-                "_errorMessages" => true,
-                "_modelsManager" => true,
-                "_skipped" => true,
-                "cache" => true,
-                "metadataCache" => true,
-                "di" => true,
-                "_collectionManager" => true,
-                "mappingFieldsCache" => true
+                '_connection' => true,
+                '_dependencyInjector' => true,
+                '_source' => true,
+                '_operationMade' => true,
+                '_errorMessages' => true,
+                '_modelsManager' => true,
+                '_skipped' => true,
+                'cache' => true,
+                'metadataCache' => true,
+                'di' => true,
+                '_collectionManager' => true,
+                'mappingFieldsCache' => true,
+                '__eager_loading' => true,
+                '__operation' => true
             ];
             self::$_reserved = $reserved;
         }

@@ -43,4 +43,11 @@ class DbRefTest extends \PHPUnit_Framework_TestCase
         $dbRef = DbRef::create((new Product())->getSource(), null);
         $this->assertNull($dbRef);
     }
+
+    public function testShouldReturnNullOneArgumentMongoId()
+    {
+        $id = new \MongoId();
+        $dbRef = DbRef::create($id);
+        $this->assertInstanceOf('\MongoId', $dbRef);
+    }
 }

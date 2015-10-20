@@ -54,6 +54,10 @@ class DbRef extends \MongoDBRef
             $id = new \MongoId($id);
         }
 
+        if ($collection instanceof \MongoId) {
+            return $collection;
+        }
+
         if ($id === null) {
             return null;
         }

@@ -15,16 +15,16 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
     {
         Di::getDefault()->remove('odmMappingCache');
 
-//        $annotationParser = new Annotation('\Fixtures\Collection\Product');
-//
-//        $metadata = [
-//            "category" => "\\Fixtures\\Collection\\Category",
-//            "price" => "int",
-//            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
-//            "isActive" => "boolean"
-//        ];
+        $annotationParser = new Annotation('\Fixtures\Collection\Product');
 
-//        $this->assertEquals($metadata, $annotationParser->getAnnotations());
+        $metadata = [
+            "category" => "\\Fixtures\\Collection\\Category",
+            "price" => "int",
+            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
+            "isActive" => "boolean"
+        ];
+
+        $this->assertEquals($metadata, $annotationParser->getAnnotations());
 
         $fakeClassSrc =
             "class Test {

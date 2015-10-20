@@ -51,7 +51,7 @@ class LazyLoadingCursor implements \Iterator
     {
         $collection = clone $this->collectionInstance;
         $collection->writeAttributes((array) $this->cursor->current());
-        if ($collection::isEagerLoadingEnabled()) {
+        if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
             $collection->applyMapping();
         }
         return $collection;
