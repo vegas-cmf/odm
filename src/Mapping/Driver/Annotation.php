@@ -53,6 +53,7 @@ class Annotation
     public function __construct($target)
     {
         $this->reflection = $this->getTargetReflection($target);
+        $this->requiredAnnotations []= strtolower(self::MAPPER_ANNOTATION);
         $this->parsePropertiesAnnotation();
     }
 
@@ -95,15 +96,14 @@ class Annotation
      */
     private function isValid($annotations)
     {
-        $valid = true;
+        $valid = [];
         foreach ($this->requiredAnnotations as $annotation) {
-            if (!in_array($annotation, $annotations)) {
-                $valid = false;
-                break;
+            if (in_array($annotation, $annotations)) {
+                $valid[strtolower($annotation)] = true;
             }
         }
 
-        return $valid;
+        return count($valid) == 2;
     }
 
     /**
@@ -115,7 +115,7 @@ class Annotation
      */
     protected function extractMapperAnnotation($docBlock)
     {
-        $regex = sprintf("#(%s)(.*?)(\n|\s|\r)#U", implode('|', $this->requiredAnnotations));
+        $regex = sprintf("#(%s)(.*?)(\n|\s|\r\t)#U", implode('|', $this->requiredAnnotations));
         preg_match_all($regex, $docBlock, $matches);
         if (empty($matches) || count($matches) < 3) {
             throw new AnnotationNotFoundException();

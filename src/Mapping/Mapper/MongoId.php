@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @author Slawomir Zytko <slawek@amsterdam-standard.pl>
  * @company Amsterdam Standard Sp. z o.o.
@@ -9,7 +8,11 @@ namespace Vegas\ODM\Mapping\Mapper;
 
 use Vegas\ODM\Mapping\MapperInterface;
 
-class MongoDate implements MapperInterface
+/**
+ * Class MongoId
+ * @package Vegas\ODM\Mapping\Mapper
+ */
+class MongoId implements MapperInterface
 {
 
     /**
@@ -27,16 +30,15 @@ class MongoDate implements MapperInterface
      */
     public static function createReference($value)
     {
-        if (!$value instanceof \MongoDate) {
-            if (is_numeric($value)) {
-                $value = new \MongoDate($value);
-            } else if (is_string($value)) {
-                if (($strDate = strtotime($value))) {
-                    $value = $strDate;
+        if (!$value instanceof \MongoId && $value !== null) {
+            if (\MongoId::isValid($value)) {
+                $value = new \MongoId($value);
+            } else {
+                try {
+                    $value = new \MongoId(trim($value));
+                } catch (\MongoException $e) {
+
                 }
-                $value = new \MongoDate(intval($value));
-            } else if ($value instanceof \DateTime) {
-                $value = new \MongoDate($value->getTimestamp());
             }
         }
 

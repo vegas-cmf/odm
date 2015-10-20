@@ -7,11 +7,11 @@
 
 namespace Vegas\Tests\ODM;
 
-use App\Collection\Category;
-use App\Collection\Product;
+use Fixtures\Collection\Category;
+use Fixtures\Collection\Product;
 use Phalcon\Di;
 
-class CollectionTeest extends \PHPUnit_Framework_TestCase
+class CollectionTest extends \PHPUnit_Framework_TestCase
 {
     protected $odmMappingCache;
 
@@ -42,7 +42,7 @@ class CollectionTeest extends \PHPUnit_Framework_TestCase
         $collection = new Product();
 
         $metadata = [
-            "category" => "\\App\\Collection\\Category",
+            "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
             "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
             "isActive" => "boolean"
@@ -70,7 +70,7 @@ class CollectionTeest extends \PHPUnit_Framework_TestCase
         $category->setCategory($parentCategory);
         $this->assertTrue($category->save());
 
-        $this->assertInstanceOf('App\\Collection\\Category', $category->getCategory());
+        $this->assertInstanceOf('\Fixtures\Collection\Category', $category->getCategory());
 
         $toArray = [
             'name' => 'Category',
@@ -115,10 +115,10 @@ class CollectionTeest extends \PHPUnit_Framework_TestCase
         $product->save();
 
         $testProduct = Product::findFirst();
-        $this->assertInstanceOf('App\Collection\Category', $testProduct->getCategory());
+        $this->assertInstanceOf('\Fixtures\Collection\Category', $testProduct->getCategory());
         $this->assertInstanceOf('\MongoDate', $testProduct->getCreatedAt());
         $this->assertInternalType('boolean', $testProduct->isActive());
         $this->assertInternalType('int', $testProduct->getPrice());
-        $this->assertInstanceOf('\App\Collection\Category', $testProduct->getCategory()->getCategory());
+        $this->assertInstanceOf('\Fixtures\Collection\Category', $testProduct->getCategory()->getCategory());
     }
 }

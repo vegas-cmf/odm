@@ -4,10 +4,9 @@
  * @company Amsterdam Standard Sp. z o.o.
  */
 
-namespace App\Collection;
+namespace Fixtures\Collection;
 
-use Vegas\ODM\Collection;
-use Vegas\ODM\Mapping\Mapper as ODM;
+use \Vegas\ODM\Collection;
 
 class Product extends Collection
 {
@@ -17,7 +16,7 @@ class Product extends Collection
     protected $name;
 
     /**
-     * @var \App\Collection\Category
+     * @var \Fixtures\Collection\Category
      * @Mapper
      */
     protected $category;

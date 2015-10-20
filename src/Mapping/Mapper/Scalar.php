@@ -70,7 +70,7 @@ class Scalar
      */
     public static function mapArray($value)
     {
-        return (array) filter_var_array($value);
+        return (array) filter_var_array((array) $value);
     }
 
     /**

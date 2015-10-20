@@ -1,13 +1,12 @@
 <?php
-
 /**
  * @author Slawomir Zytko <slawek@amsterdam-standard.pl>
  * @company Amsterdam Standard Sp. z o.o.
  */
 
-namespace App\Collection;
+namespace Fixtures\Collection;
 
-use Vegas\ODM\Collection;
+use \Vegas\ODM\Collection;
 
 class Category extends Collection
 {
@@ -22,7 +21,7 @@ class Category extends Collection
     protected $desc;
 
     /**
-     * @var \App\Collection\Category
+     * @var \Fixtures\Collection\Category
      * @Mapper
      */
     protected $category;

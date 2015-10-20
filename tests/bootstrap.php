@@ -3,11 +3,10 @@ error_reporting(E_ALL);
 //Test Suite bootstrap
 include __DIR__ . "/../vendor/autoload.php";
 
-use Phalcon\Cache\Backend\Mongo as BackMongo;
-use Phalcon\Cache\Frontend\Output as FrontOutput;
+use Phalcon\Loader;
 
 define('TESTS_ROOT_DIR', dirname(__FILE__));
-define('APP_ROOT', TESTS_ROOT_DIR . '/fixtures');
+define('APP_ROOT', dirname(__FILE__) . '/tests/fixures');
 
 $configArray = require_once TESTS_ROOT_DIR . '/config.php';
 
@@ -17,6 +16,13 @@ $_SERVER['REQUEST_URI'] = '/';
 $config = new \Phalcon\Config($configArray);
 $di = new Phalcon\DI\FactoryDefault();
 
+$loader = new Loader();
+$loader->registerNamespaces(
+    [
+        "Fixtures\\Collection"    => __DIR__ . "/fixtures/Collection/"
+    ]
+);
+$loader->register();
 
 $di->set('collectionManager', function() use ($di) {
     return new \Phalcon\Mvc\Collection\Manager();
