@@ -13,10 +13,7 @@
     "require": {
         "php": ">=5.4",
         "ext-phalcon": ">=2.0",
-        "phalcon/incubator": ">=2.0",
-        "devster/ubench": "^1.2",
-        "wp-cli/php-cli-tools": "^0.10.4",
-        "ocramius/generated-hydrator": "^1.1"
+        "phalcon/incubator": ">=2.0"
     },
     "require-dev": {
         "phalcon/devtools": ">=2.0",
