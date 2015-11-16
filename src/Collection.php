@@ -79,6 +79,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     final public static function getMapped($value)
     {
+        if (!$value) {
+            return new static();
+        }
         if (DbRef::isRef($value)) {
             $value = $value['$id'];
         } else if ($value instanceof Collection) {
@@ -358,9 +361,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     public function applyMapping()
     {
         $metadata = $this->getMetadata();
-        foreach ($metadata as $field => $mapperClassName) {
-            if (isset($this->{$field})) {
-                $this->{$field} = $this->mapField($mapperClassName, $this->{$field});
+        foreach (get_object_vars($this) as $propName => $value) {
+            if (isset($metadata[$propName])) {
+                $this->{$propName} = $this->mapField($metadata[$propName], $this->{$propName});
             }
         }
     }
