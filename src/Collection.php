@@ -347,12 +347,20 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 $this->mappingFieldsCache[$cacheKey] = Scalar::map($value, $type);
             } else {
                 $class = new \ReflectionClass($type);
-                $this->mappingFieldsCache[$cacheKey] = $class->getMethod('getMapped')->invoke(null, $value);
+                $result = $class->getMethod('getMapped')->invoke(null, $value);
+
+                if (is_object($result)) {
+                    $object = new \ReflectionObject($result);
+                    if ($object->isCloneable()) {
+                        $result = clone $result;
+                    }
+                }
+
+                $this->mappingFieldsCache[$cacheKey] = $result;
             }
         }
 
-        return is_object($this->mappingFieldsCache[$cacheKey])
-            ? clone $this->mappingFieldsCache[$cacheKey] : $this->mappingFieldsCache[$cacheKey];
+        return $this->mappingFieldsCache[$cacheKey];
     }
 
     /**
