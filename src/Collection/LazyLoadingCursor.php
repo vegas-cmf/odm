@@ -40,6 +40,19 @@ class LazyLoadingCursor implements \Iterator
         $this->collectionInstance = $collectionClass;
     }
 
+    /**
+     * @return array
+     */
+    public function toArray()
+    {
+        $array = [];
+        $this->rewind();
+        while ($this->valid()) {
+            $array[] = $this->current()->toArray();
+            $this->next();
+        }
+        return $array;
+    }
 
     /**
      * (PHP 5 &gt;= 5.0.0)<br/>
@@ -100,5 +113,13 @@ class LazyLoadingCursor implements \Iterator
     public function rewind()
     {
         $this->cursor->rewind();
+    }
+
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return $this->cursor->count();
     }
 }

@@ -12,7 +12,7 @@ use Fixtures\Collection\Product;
 class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
 {
 
-    public function setUp()
+    public static function setUpBeforeClass()
     {
         foreach (Category::find() as $category) {
             $category->delete();
@@ -65,6 +65,27 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
         foreach ($categories as $category) {
             $this->assertInstanceOf('\Fixtures\Collection\Category', $category);
             $this->assertTrue(\MongoDBRef::isRef($category->getCategory()));
+        }
+    }
+
+    public function testShouldReturnArray()
+    {
+        Category::enableEagerLoading();
+        $categories = Category::find([
+            [
+                'category' => [
+                    '$ne' => null
+                ]
+            ]
+        ]);
+
+        $this->assertInternalType('array', $categories->toArray());
+        $this->assertSame($categories->count(), count($categories->toArray()));
+
+        $categoriesArray = $categories->toArray();
+        $i = 0;
+        foreach ($categories as $category) {
+            $this->assertEquals((string) $category->getId(), (string) $categoriesArray[$i++]['_id']);
         }
     }
 }
