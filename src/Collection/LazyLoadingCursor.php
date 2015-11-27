@@ -45,7 +45,7 @@ class LazyLoadingCursor implements \Iterator
     {
         $this->cursor = $cursor;
         $this->collectionInstance = $collectionClass;
-        $this->fields = null;
+        $this->fields = $fields;
     }
 
     /**

@@ -210,7 +210,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         $collection = new $className;
         $cursor = static::_getResultCursor($parameters, $collection, $collection->getConnection());
 
-        return new LazyLoadingCursor($cursor, $collection);
+        return new LazyLoadingCursor(
+            $cursor,
+            $collection,
+            is_array($parameters) &&  isset($parameters['fields']) ? $parameters['fields'] : null
+        );
     }
 
     /**
@@ -227,6 +231,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
         $cursor->next();
         $collection->writeAttributes((array) $cursor->current());
+        if (is_array($parameters) && isset($parameters['fields'])) {
+            $collection->setCursorFields($parameters['fields']);
+        }
         if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
             $collection->applyMapping();
         }
@@ -330,7 +337,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @param $fields
      */
-    public function getCursorFields($fields)
+    public function setCursorFields($fields)
     {
         $this->__cursorFields = $fields;
     }
