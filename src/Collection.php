@@ -287,15 +287,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public function toArray()
     {
-        $reserved = $this->getReservedAttributes();
         $data = [];
         foreach ($this->getObjectProperties() as $k => $v) {
-            if (!isset($reserved[$k])) {
-                if (is_object($v) && method_exists($v, 'toArray')) {
-                    $v = $v->toArray();
-                }
-                $data[$k] = $v;
+            if (is_object($v) && method_exists($v, 'toArray')) {
+                $v = $v->toArray();
             }
+            $data[$k] = $v;
         }
 
         if ($this->__operation === 'save') {
@@ -389,7 +386,15 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     protected function getObjectProperties()
     {
-        return $this->__cursorFields ?: get_object_vars($this);
+        $reserved = $this->getReservedAttributes();
+        return array_filter(get_object_vars($this), function($var) use ($reserved) {
+            $allowed = !isset($reserved[$var]);
+            if ($this->__cursorFields) {
+                $allowed = isset($this->__cursorFields[$var]) && $allowed;
+            }
+
+            return $allowed;
+        }, ARRAY_FILTER_USE_KEY);
     }
 
     /**
