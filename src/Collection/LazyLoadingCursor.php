@@ -31,13 +31,21 @@ class LazyLoadingCursor implements \Iterator
     protected $collectionInstance;
 
     /**
+     * @var array
+     */
+    protected $fields = null;
+
+    /**
+     * LazyLoadingCursor constructor.
      * @param \MongoCursor $cursor
      * @param Collection $collectionClass
+     * @param null $fields
      */
-    public function __construct(\MongoCursor $cursor, Collection $collectionClass)
+    public function __construct(\MongoCursor $cursor, Collection $collectionClass, $fields = null)
     {
         $this->cursor = $cursor;
         $this->collectionInstance = $collectionClass;
+        $this->fields = null;
     }
 
     /**
@@ -64,6 +72,9 @@ class LazyLoadingCursor implements \Iterator
     {
         $collection = clone $this->collectionInstance;
         $collection->writeAttributes((array) $this->cursor->current());
+        if ($this->fields) {
+            $collection->setCursorFields($this->fields);
+        }
         if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
             $collection->applyMapping();
         }

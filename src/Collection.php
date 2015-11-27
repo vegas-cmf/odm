@@ -28,6 +28,16 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     public $__eager_loading = true;
 
     /**
+     * @var array
+     */
+    private $mappingFieldsCache = [];
+
+    /**
+     * @var []|null
+     */
+    private $__cursorFields = null;
+
+    /**
      * @var bool
      */
     protected static $eagerLoading = [];
@@ -235,7 +245,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $currentValues = [];
 
             if (!empty($metadata)) {
-                foreach (get_object_vars($this) as $object => $value) {
+                foreach ($this->getObjectProperties() as $object => $value) {
                     if (isset($metadata[$object])) {
                         $currentValues[$object] = $this->{$object};
                         if (Scalar::isScalar($metadata[$object])) {
@@ -272,7 +282,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     {
         $reserved = $this->getReservedAttributes();
         $data = [];
-        foreach (get_object_vars($this) as $k => $v) {
+        foreach ($this->getObjectProperties() as $k => $v) {
             if (!isset($reserved[$k])) {
                 if (is_object($v) && method_exists($v, 'toArray')) {
                     $v = $v->toArray();
@@ -309,7 +319,8 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 '_collectionManager' => true,
                 'mappingFieldsCache' => true,
                 '__eager_loading' => true,
-                '__operation' => true
+                '__operation' => true,
+                '__cursorFields' => true
             ];
             self::$_reserved = $reserved;
         }
@@ -317,9 +328,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
-     * @var array
+     * @param $fields
      */
-    private $mappingFieldsCache = [];
+    public function getCursorFields($fields)
+    {
+        $this->__cursorFields = $fields;
+    }
 
     /**
      * @param $className
@@ -364,12 +378,20 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
+     * @return array
+     */
+    protected function getObjectProperties()
+    {
+        return $this->__cursorFields ?: get_object_vars($this);
+    }
+
+    /**
      *
      */
     public function applyMapping()
     {
         $metadata = $this->getMetadata();
-        foreach (get_object_vars($this) as $propName => $value) {
+        foreach ($this->getObjectProperties() as $propName => $value) {
             if (isset($metadata[$propName])) {
                 $this->{$propName} = $this->mapField($metadata[$propName], $this->{$propName});
             }
