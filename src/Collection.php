@@ -229,6 +229,10 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         $collection = new $className;
         $cursor = static::_getResultCursor($parameters, $collection, $collection->getConnection());
 
+        if ($cursor->count() === 0) {
+            return false;
+        }
+
         $cursor->next();
         $collection->writeAttributes((array) $cursor->current());
         if (is_array($parameters) && isset($parameters['fields'])) {
