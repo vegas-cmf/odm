@@ -90,7 +90,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     final public static function getMapped($value)
     {
         if (!$value) {
-            return new static();
+            return false;
         }
         if (DbRef::isRef($value)) {
             $value = $value['$id'];
@@ -241,11 +241,53 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
-     * @return bool
+     * @return bool|void
+     * @throws \Exception
      */
     public function save()
     {
         $this->__operation = 'save';
+
+        $source = $this->getSource();
+        if (empty($source)) {
+            throw new \Exception("Method getSource() returns empty string");
+        }
+
+        $connection = $this->getConnection();
+
+        /**
+         * Choose a collection according to the collection name
+         */
+        $collection = $connection->selectCollection($source);
+
+        /**
+         * Check the dirty state of the current operation to update the current operation
+         */
+        $exists = parent::_exists($collection);
+
+        if ($exists === false) {
+            $this->_operationMade = self::OP_CREATE;
+        } else {
+            $this->_operationMade = self::OP_UPDATE;
+        }
+
+        /**
+         * The messages added to the validator are reset here
+         */
+        $this->_errorMessages = [];
+
+        $disableEvents = self::$_disableEvents;
+
+        /**
+         * Execute the preSave hook
+         */
+        if (parent::_preSave($this->getDI(), $disableEvents, $exists) === false) {
+            return false;
+        }
+
+        $data = $this->toArray();
+        $success = false;
+
         if (static::isEagerLoadingEnabled()) {
             $metadata = $this->getMetadata();
 
@@ -256,11 +298,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                     if (isset($metadata[$object])) {
                         $currentValues[$object] = $this->{$object};
                         if (Scalar::isScalar($metadata[$object])) {
-                            $this->{$object} = Scalar::map($this->{$object}, $metadata[$object]);
+                            $data[$object] = Scalar::map($this->{$object}, $metadata[$object]);
                         } else {
                             $reflectionClass = new \ReflectionClass($metadata[$object]);
                             if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                                $this->{$object} = $reflectionClass->getMethod('createReference')
+                                $data[$object] = $reflectionClass->getMethod('createReference')
                                     ->invoke(null, $this->{$object});
                             }
                         }
@@ -269,17 +311,27 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             }
         }
 
-        $result = parent::save();
-
-        if (static::isEagerLoadingEnabled()) {
-            // rollback origin values to model class
-            foreach ($currentValues as $object => $value) {
-                $this->{$object} = $value;
+        $status = $collection->save($data, ["w" => true]);
+        if (is_array($status)) {
+            if (isset($status['ok'])) {
+                if ($status['ok']) {
+                    $success = true;
+                    if ($exists === false) {
+                        if (isset($data['_id'])) {
+                            $this->_id = $data['_id'];
+                        }
+                    }
+                }
             }
+        } else {
+            $success = false;
         }
 
         $this->__operation = false;
-        return $result;
+        /**
+         * Call the postSave hooks
+         */
+        return parent::_postSave($disableEvents, $success, $exists);
     }
 
     /**
