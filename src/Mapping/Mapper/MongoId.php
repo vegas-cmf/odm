@@ -35,7 +35,11 @@ class MongoId implements MapperInterface
                 $value = new \MongoId($value);
             } else {
                 try {
-                    $value = new \MongoId(trim($value));
+                    if (is_array($value) && isset($value['$id'])) {
+                        $value = new \MongoId($value['$id']);
+                    } else {
+                        $value = new \MongoId(trim($value));
+                    }
                 } catch (\MongoException $e) {
 
                 }
