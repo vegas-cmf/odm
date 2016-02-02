@@ -38,7 +38,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     private $mappingFieldsCache = [];
 
     /**
-     * @var []|null
+     * @var array|null
      */
     private $__cursorFields = null;
 
@@ -46,6 +46,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * @var bool
      */
     protected static $eagerLoading = [];
+
+    /**
+     * @var array
+     */
+    protected static $eagerLoadingCache = [];
 
     /**
      * Disables references eager loading
@@ -102,7 +107,21 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         } else if ($value instanceof Collection) {
             $value = $value->getId();
         }
-        return static::findById($value);
+
+        return static::ensureCache($value);
+    }
+
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected static function ensureCache($value)
+    {
+        $cacheKey = sprintf('%s:%s', get_called_class(), $value);
+        if (!isset(static::$eagerLoadingCache[$cacheKey])) {
+            static::$eagerLoadingCache[$cacheKey] = static::findById($value);
+        }
+        return static::$eagerLoadingCache[$cacheKey];
     }
 
     /**
@@ -493,7 +512,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $cacheKey = $this->getMetadataCacheKey();
             if (!$cache->exists($cacheKey)) {
                 $annotations = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();
-                $this->getDI()->get('odmMappingCache')->save($cacheKey, $annotations);
+                $cache->save($cacheKey, $annotations);
             } else {
                 $annotations = $cache->get($cacheKey);
             }
