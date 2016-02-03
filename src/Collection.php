@@ -108,20 +108,31 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $value = $value->getId();
         }
 
-        return static::ensureCache($value);
+        return static::ensureMappingCache($value);
     }
 
     /**
      * @param $value
      * @return mixed
      */
-    protected static function ensureCache($value)
+    protected static function ensureMappingCache($value)
     {
         $cacheKey = sprintf('%s:%s', get_called_class(), $value);
         if (!isset(static::$eagerLoadingCache[$cacheKey])) {
             static::$eagerLoadingCache[$cacheKey] = static::findById($value);
         }
         return static::$eagerLoadingCache[$cacheKey];
+    }
+
+    /**
+     * @param $value
+     */
+    protected static function clearMappingCache($value)
+    {
+        $cacheKey = sprintf('%s:%s', get_called_class(), $value);
+        if (isset(static::$eagerLoadingCache[$cacheKey])) {
+            unset(static::$eagerLoadingCache[$cacheKey]);
+        }
     }
 
     /**
@@ -248,24 +259,13 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public static function findFirst(array $parameters = null)
     {
-        $className = get_called_class();
-        /** @var Collection $collection */
-        $collection = new $className;
-        $cursor = static::_getResultCursor($parameters, $collection, $collection->getConnection());
-
+        $cursor = static::find($parameters);
         if ($cursor->count() === 0) {
             return false;
         }
 
         $cursor->next();
-        $collection->writeAttributes((array) $cursor->current());
-        if (is_array($parameters) && isset($parameters['fields'])) {
-            $collection->setCursorFields($parameters['fields']);
-        }
-        if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
-            $collection->applyMapping();
-        }
-        return $collection;
+        return $cursor->current();
     }
 
     /**
@@ -353,6 +353,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             }
         } else {
             $success = false;
+        }
+
+        // clears cache for saved document
+        if ($success) {
+            $this->clearMappingCache($this->_id);
         }
 
         $this->__operation = false;
