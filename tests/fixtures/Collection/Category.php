@@ -23,6 +23,7 @@ class Category extends Collection
     /**
      * @var \Fixtures\Collection\Category
      * @Mapper
+     * @Proxy
      */
     protected $category;
 

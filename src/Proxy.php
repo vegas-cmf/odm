@@ -5,7 +5,8 @@
  */
 
 namespace Vegas\ODM;
-use ProxyManager\Factory\LazyLoadingGhostFactory;
+use Phalcon\DiInterface;
+use Vegas\ODM\Proxy\LazyLoadingGhostFactory;
 
 /**
  * Class Proxy
@@ -18,11 +19,15 @@ class Proxy
 
     /**
      * @param $className
-     * @return \ProxyManager\Proxy\GhostObjectInterface
+     * @param DiInterface $di
+     * @return \ProxyManager\Proxy\LazyLoadingInterface
      */
-    public static function getLazyLoadingClass($className)
+    public static function getLazyLoadingClass($className, DiInterface $di)
     {
-        $proxy = self::getFactory()->createProxy(
+        $factory = self::getFactory();
+        $factory->setDI($di);
+
+        $proxy = $factory->createProxy(
             $className,
             function ($proxy, $method, $parameters, & $initializer) {
                 $initializer = null;

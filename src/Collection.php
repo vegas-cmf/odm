@@ -526,4 +526,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         }
         return $annotations ? $annotations : [];
     }
+
+    public function __set($name, $value)
+    {
+        $methodName = 'set' . ucfirst($name);
+        if (method_exists($this, $methodName)) {
+            call_user_func_array([$this, $methodName], [$value]);
+        }
+    }
 }
