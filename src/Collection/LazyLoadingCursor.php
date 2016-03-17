@@ -15,6 +15,7 @@ namespace Vegas\ODM\Collection;
 use Phalcon\Di;
 use Vegas\ODM\Collection;
 use Vegas\ODM\Proxy;
+use Vegas\ODM\ProxyBuilder;
 
 /**
  * Class LazyLoadingCursor
@@ -77,22 +78,16 @@ class LazyLoadingCursor implements \Iterator
         if ($this->fields) {
             $collection->setCursorFields($this->fields);
         }
-        if ($collection::isEagerLoadingEnabled() && $collection->__eager_loading) {
-            $collection->applyMapping();
-        } else {
-            $reflection = new \ReflectionClass($collection);
-            $properties = $reflection->getProperties();
 
-            $proxyClass = Proxy::getLazyLoadingClass(get_class($collection), Di::getDefault());
-            foreach($properties as $property) {
-                if($property->isPrivate() || $property->isProtected()) {
-                    $property->setAccessible(true);
-                }
-                $proxyClass->{$property->getName()} = $property->getValue($collection);
-            }
+        if ($collection::isLazyLoadingEnabled()) { // && $collection->__lazy_loading
+            $proxyClass = ProxyBuilder::getLazyLoadingClass(get_class($collection), Di::getDefault());
+            ProxyBuilder::assignProxyValues($proxyClass, $collection);
 
             $collection = $proxyClass;
+        } else {
+            $collection->applyMappings();
         }
+
         return $collection;
     }
 
