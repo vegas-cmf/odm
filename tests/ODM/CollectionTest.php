@@ -8,6 +8,8 @@
 namespace Vegas\Tests\ODM;
 
 use Fixtures\Collection\Category;
+use Fixtures\Collection\InvalidCollection;
+use Fixtures\Collection\MissingCollection;
 use Fixtures\Collection\Product;
 use Phalcon\Di;
 use Vegas\ODM\Collection;
@@ -24,9 +26,6 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         foreach (Product::find() as $product) {
             $product->delete();
         }
-
-//        Category::enableEagerLoading();
-//        Product::enableEagerLoading();
 
         // disable cache
         $this->odmMappingCache = Di::getDefault()->get('odmMappingCache');
@@ -48,12 +47,53 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $metadata = [
             "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
+            "tags" => "\\Fixtures\\Collection\\Tag",
             "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
             "isActive" => "boolean"
         ];
 
         $this->assertEquals($metadata, $collection->getMetadata());
     }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testInvalidCollection()
+    {
+        $collection = new InvalidCollection();
+        $collection->setBar('test');
+        $collection->save();
+    }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testExceptionOnFind()
+    {
+        $collection = InvalidCollection::find();
+    }
+
+    public function testEagerLoadingOption()
+    {
+        $category = new Category();
+        $category->setName('Category 1');
+        $category->setDesc('Category 1 desc');
+        $category->save();
+
+        $product = new Product();
+        $product->setName('Product 1');
+        $product->setPrice(100);
+        $product->setIsActive(true);
+        $product->setCategory($category);
+        $product->setCreatedAt(time());
+        $product->save();
+
+        Product::disableLazyLoading();
+        $product = Product::findFirst();
+
+        $this->assertFalse(Product::isLazyLoadingEnabled());
+    }
+
 
     public function testShouldSaveRecordWithCorrectReferences()
     {

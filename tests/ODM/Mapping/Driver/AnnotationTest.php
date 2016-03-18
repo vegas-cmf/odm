@@ -8,9 +8,33 @@ namespace Vegas\Tests\ODM\Mapping\Driver;
 
 use Phalcon\Di;
 use Vegas\ODM\Mapping\Driver\Annotation;
+use Vegas\ODM\Mapping\Driver\Exception\UnsupportedTargetException;
 
 class AnnotationTest extends \PHPUnit_Framework_TestCase
 {
+
+    public function testSingleMapping()
+    {
+        $matches = [];
+        $regex = "#(@Mapper|@var|@mapper)(.*?)(\n|\s|\r\t)#U";
+        $docBlock = "/**\n * @var \Fixtures\Collection\Tag\n * @Mapper\n */";
+        preg_match_all($regex, $docBlock, $matches);
+
+        $this->assertEquals(count($matches[1]), 2);
+        $this->assertEquals($matches[0][0], "@var \Fixtures\Collection\Tag\n");
+    }
+
+    public function testArrayMapping()
+    {
+        $matches = [];
+        $regex = "#(@Mapper|@var|@mapper)(.*?)(\n|\s|\r\t)#U";
+        $docBlock = "/**\n * @var \Fixtures\Collection\Tag []\n * @Mapper\n */";
+        preg_match_all($regex, $docBlock, $matches);
+
+        $this->assertEquals(count($matches[1]), 2);
+        $this->assertEquals($matches[0][0], "@var \Fixtures\Collection\Tag []\n");
+    }
+
     public function testShouldExtractAnnotationsFromClass()
     {
         Di::getDefault()->remove('odmMappingCache');
@@ -20,6 +44,7 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
         $metadata = [
             "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
+            "tags" => "\\Fixtures\\Collection\\Tag",
             "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
             "isActive" => "boolean"
         ];
@@ -70,5 +95,13 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
         ];
 
         $this->assertEquals($metadata, $annotationParser->getAnnotations());
+    }
+
+    /**
+     * @expectedException \Vegas\ODM\Mapping\Driver\Exception\UnsupportedTargetException
+     */
+    public function testUnsupportedTargetException()
+    {
+        new Annotation([]);
     }
 }

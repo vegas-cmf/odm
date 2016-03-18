@@ -16,7 +16,7 @@ use Vegas\ODM\ProxyBuilder;
 use Fixtures\Collection\Foo;
 
 
-class ProxyBuilderTest extends \PHPUnit_Framework_TestCase
+class ProxyTest extends \PHPUnit_Framework_TestCase
 {
     protected $di;
 

@@ -8,6 +8,7 @@ namespace Vegas\Tests\ODM\Collection;
 
 use Fixtures\Collection\Category;
 use Fixtures\Collection\Product;
+use Fixtures\Lib\ExtendedCursor;
 
 class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
 {
@@ -20,6 +21,33 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
         foreach (Product::find() as $product) {
             $product->delete();
         }
+    }
+
+    public function testQueryWithGivenFields()
+    {
+        /** @var Product $collection */
+        $collection = new Product;
+        $collection->setName('test');
+        $collection->setPrice(199);
+        $collection->save();
+
+        $parameters = [
+            'fields' => [ 'name' ]
+        ];
+
+        $cursor = Product::_getCursor($parameters, $collection, $collection->getConnection());
+
+        $cursor = new \Fixtures\Collection\Lib\ExtendedCursor(
+            $cursor,
+            $collection,
+            is_array($parameters) &&  isset($parameters['fields']) ? $parameters['fields'] : null
+        );
+
+        $fields = $cursor->getFields();
+        $this->assertEquals(1, count($fields));
+        $item = $cursor->current();
+
+        $this->assertEquals($collection->getName(), $item->getName());
     }
 
     public function testShouldReturnLazyLoadingCursor()

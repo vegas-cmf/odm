@@ -79,7 +79,7 @@ class LazyLoadingCursor implements \Iterator
             $collection->setCursorFields($this->fields);
         }
 
-        if ($collection::isLazyLoadingEnabled()) { // && $collection->__lazy_loading
+        if ($collection::isLazyLoadingEnabled()) {
             $proxyClass = ProxyBuilder::getLazyLoadingClass(get_class($collection), Di::getDefault());
             ProxyBuilder::assignProxyValues($proxyClass, $collection);
 
