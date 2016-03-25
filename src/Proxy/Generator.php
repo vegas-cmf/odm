@@ -38,7 +38,7 @@ class Generator
             foreach($metadata as $fieldName => $mappingClass) {
                 $classGenerator->addMethod('get' . ucfirst($fieldName), [],
                     MethodGenerator::FLAG_PUBLIC,
-                    '$this->applyMapping(\'' . $fieldName . '\');' . "\n" .'return $this->' . $fieldName . ';',
+                    '$this->mapProperty(\'' . $fieldName . '\');' . "\n" .'return $this->' . $fieldName . ';',
                     '@return ' . $mappingClass
                 );
             }

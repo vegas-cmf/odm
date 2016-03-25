@@ -492,7 +492,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      * Apply mappings for all defined mappers in collection. It has recursive flow, so deep relation
      * resolving will be performed. For an individual property, use applyMapping(PROPERTY_NAME) method.
      */
-    public function applyMappings()
+    public function map()
     {
         if (!$this->__is_mapped) {
             $metadata = $this->getMetadata();
@@ -506,13 +506,15 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             }
             $this->__is_mapped = true;
         }
+
+        return $this;
     }
 
     /**
      * Apply mappings for one property, given by a name
      * @param $propertyName
      */
-    public function applyMapping($propertyName)
+    protected function mapProperty($propertyName)
     {
         $metadata = $this->getMetadata();
         if (isset($metadata[$propertyName])) {

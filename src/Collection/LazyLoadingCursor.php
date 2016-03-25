@@ -85,7 +85,7 @@ class LazyLoadingCursor implements \Iterator
 
             $collection = $proxyClass;
         } else {
-            $collection->applyMappings();
+            $collection->map();
         }
 
         return $collection;

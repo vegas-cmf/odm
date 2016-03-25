@@ -84,10 +84,10 @@ class BenchmarkTest extends \PHPUnit_Framework_TestCase
         $products = Product::find();
         /** @var Product $product */
         foreach($products as $product) {
-            $product->applyMappings();
+            $product->map();
             $subCategory = $product->getCategory();
             if ($subCategory) {
-                $subCategory->applyMappings();
+                $subCategory->map();
                 $mainCategory = $subCategory->getCategory();
             }
             $productName = $product->getName();
