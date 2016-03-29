@@ -1,7 +1,7 @@
 <?php
 return [
     'application' => [
-        'environment'   =>  \Vegas\Constants::TEST_ENV,
+        'environment'   =>  'testing',
 
         'serviceDir'   =>  APP_ROOT . '/app/services/',
         'configDir'     => APP_ROOT . '/app/config/',
