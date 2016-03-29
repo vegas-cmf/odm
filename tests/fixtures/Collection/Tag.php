@@ -16,6 +16,12 @@ class Tag extends Collection
     protected $name;
 
     /**
+     * @var \Fixtures\Collection\Status
+     * @Mapper
+     */
+    protected $status;
+
+    /**
      * @return string
      */
     public function getName()
@@ -29,6 +35,22 @@ class Tag extends Collection
     public function setName($name)
     {
         $this->name = $name;
+    }
+
+    /**
+     * @return Status
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * @param $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
     }
 
     public function getSource()

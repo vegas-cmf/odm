@@ -31,6 +31,25 @@ return [
         'db' => 'vegas_test',
     ],
 
+    'mapping' => [
+        'cache' => [
+            'frontend' => [
+                'driverClass' => 'Phalcon\Cache\Frontend\Output',
+                'parameters' => [
+                    'lifetime' => 3600
+                ]
+            ],
+            'backend' => [
+                'driverClass' => '\Phalcon\Cache\Backend\Mongo',
+                'parameters' => [
+                    'server' => 'localhost',
+                    'db' => 'vegas_test',
+                    'collection' => 'cache'
+                ]
+            ],
+        ]
+    ],
+
     'db'    =>  [
         "adapter" => 'mysql',
         "host" => "localhost",

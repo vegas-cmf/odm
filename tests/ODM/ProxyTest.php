@@ -8,6 +8,8 @@
 namespace Vegas\Tests\ODM;
 
 use Fixtures\Collection\_PM_\Test\Proxy;
+use Fixtures\Collection\Status;
+use Fixtures\Collection\Tag;
 use Phalcon\Di;
 use Phalcon\DiInterface;
 use Vegas\ODM\Collection;
@@ -38,5 +40,22 @@ class ProxyTest extends \PHPUnit_Framework_TestCase
             get_class($proxy),
             Helper::PROXY_NAMESPACE . Helper::PROXY_CONST . Helper::getUserClassName(Proxy::class)
         ));
+    }
+
+    public function testMapByNonCollectionInstanceClass()
+    {
+        $status = new Status();
+        $status->setName('status1');
+        $status->save();
+
+        $tag = new Tag();
+        $tag->setName('tag1');
+        $tag->setStatus($status);
+        $tag->save();
+
+        /** @var Tag $tag */
+        $tag = Tag::findFirst();
+        $this->assertEquals('status1', $tag->getStatus()->getName());
+        $this->assertEquals('status1', $tag->getStatus()->getName());
     }
 }

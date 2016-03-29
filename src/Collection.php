@@ -35,6 +35,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     public $__is_mapped = false;
 
     /**
+     * @var bool
+     */
+    public $__is_property_mapped = [];
+
+    /**
      * @var array
      */
     private $mappingFieldsCache = [];
@@ -414,6 +419,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 'mappingFieldsCache' => true,
                 '__lazy_loading' => true,
                 '__is_mapped' => true,
+                '__is_property_mapped' => true,
                 '__operation' => true,
                 '__cursorFields' => true
             ];
@@ -516,9 +522,12 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     protected function mapProperty($propertyName)
     {
-        $metadata = $this->getMetadata();
-        if (isset($metadata[$propertyName])) {
-            $this->{$propertyName} = $this->mapField($metadata[$propertyName], $this->{$propertyName});
+        if (!isset($this->__is_property_mapped[$propertyName])) {
+            $metadata = $this->getMetadata();
+            if (isset($metadata[$propertyName])) {
+                $this->{$propertyName} = $this->mapField($metadata[$propertyName], $this->{$propertyName});
+            }
+            $this->__is_property_mapped[$propertyName] = true;
         }
     }
 

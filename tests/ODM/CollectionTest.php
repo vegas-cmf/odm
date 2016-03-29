@@ -8,6 +8,7 @@
 namespace Vegas\Tests\ODM;
 
 use Fixtures\Collection\Category;
+use Fixtures\Collection\Foo;
 use Fixtures\Collection\InvalidCollection;
 use Fixtures\Collection\MissingCollection;
 use Fixtures\Collection\Product;
@@ -235,6 +236,15 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $product->save();
 
         $product = Product::findById($product->getId());
-        $this->assertInstanceOf('Fixtures\Collection\Category', $product->getCategory());
+
+        $category1 = $product->getCategory();
+        $category2 = $product->getCategory();
+
+        $this->assertInstanceOf('Fixtures\Collection\Category', $category1);
+
+        $this->assertInstanceOf('Fixtures\Collection\Category', $category2);
+
+        $this->assertSame($category2->getName(), $category1->getName());
     }
+
 }
