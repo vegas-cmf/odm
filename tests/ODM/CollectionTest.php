@@ -89,8 +89,6 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $product->save();
 
         Product::disableLazyLoading();
-        $product = Product::findFirst();
-
         $this->assertFalse(Product::isLazyLoadingEnabled());
     }
 
@@ -133,7 +131,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
             '_id' => $category->getId()
         ];
 
-        $this->assertEquals($toArray, $category->toArray());
+        $this->assertEquals($toArray, $category->map()->toArray());
     }
 
     public function testShouldMapValues()
@@ -218,14 +216,25 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($product);
     }
 
-    public function testShouldClearMappingCache()
+    public function testShouldSaveNotLoadedReference()
     {
+        $category = new Category();
+        $category->setName('Category 1');
+        $category->setDesc('Category 1 desc');
+        $category->save();
+
         $product = new Product();
+        $product->setCategory($category);
         $product->setName('Product 1');
         $product->setPrice(100);
         $product->setIsActive(true);
         $product->setCreatedAt(time());
         $product->save();
 
+        $product = Product::findById($product->getId());
+        $product->save();
+
+        $product = Product::findById($product->getId());
+        $this->assertInstanceOf('Fixtures\Collection\Category', $product->getCategory());
     }
 }

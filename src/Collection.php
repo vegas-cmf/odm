@@ -499,8 +499,8 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             foreach ($this->getObjectProperties() as $propName => $value) {
                 if (isset($metadata[$propName])) {
                     $this->{$propName} = $this->mapField($metadata[$propName], $this->{$propName});
-                    if (is_object($this->{$propName}) && method_exists($this->{$propName}, 'applyMappings')) {
-                        $this->{$propName}->applyMappings();
+                    if (is_object($this->{$propName}) && method_exists($this->{$propName}, 'map')) {
+                        $this->{$propName}->map();
                     }
                 }
             }
