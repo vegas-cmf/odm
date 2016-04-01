@@ -69,7 +69,7 @@ class Helper
      */
     public static function getProxyClassName($className)
     {
-        $classHash = md5(md5(uniqid('', true)));
+        $classHash = md5($className);
         $userClassName = self::getUserClassName($className);
 
         return self::PROXY_NAMESPACE . self::PROXY_CONST . $userClassName . $classHash;
