@@ -22,6 +22,12 @@ class Product extends Collection
     protected $category;
 
     /**
+     * @var \Fixtures\Collection\Tag
+     * @Mapper
+     */
+    protected $tags;
+
+    /**
      * @var int
      * @Mapper
      */
@@ -66,9 +72,25 @@ class Product extends Collection
     /**
      * @param Category $category
      */
-    public function setCategory(Category $category)
+    public function setCategory($category)
     {
         $this->category = $category;
+    }
+
+    /**
+     * @return Tag
+     */
+    public function getTag()
+    {
+        return $this->tags;
+    }
+
+    /**
+     * @param Tag $tags
+     */
+    public function setTags($tags)
+    {
+        $this->tags = $tags;
     }
 
     /**
@@ -122,5 +144,16 @@ class Product extends Collection
     public function getSource()
     {
         return 'vegas_app_products';
+    }
+
+    /**
+     * @param $params
+     * @param $collection
+     * @param $connection
+     * @return mixed
+     * @throws \Exception
+     */
+    public static function _getCursor($params, $collection, $connection) {
+        return static::_getResultCursor($params, $collection, $connection);
     }
 }

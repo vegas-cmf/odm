@@ -27,8 +27,10 @@ $loader->register();
 $di->set('collectionManager', function() use ($di) {
     return new \Phalcon\Mvc\Collection\Manager();
 }, true);
+
 $di->set('mongo', function() use ($config) {
     $mongo = new \MongoClient();
+    $mongo->selectDB($config->mongo->db)->drop();
     return $mongo->selectDb($config->mongo->db);
 }, true);
 

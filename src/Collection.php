@@ -6,6 +6,8 @@
 
 namespace Vegas\ODM;
 
+use Phalcon\Di;
+use Phalcon\DiInterface;
 use Vegas\ODM\Mapping\Mapper\Scalar;
 use Vegas\ODM\Mongo\DbRef;
 use Vegas\ODM\Collection\LazyLoadingCursor;
@@ -25,12 +27,17 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @var bool
      */
-    public $__eager_loading = true;
+    public $__lazy_loading = true;
 
     /**
      * @var bool
      */
     public $__is_mapped = false;
+
+    /**
+     * @var bool
+     */
+    public $__is_property_mapped = [];
 
     /**
      * @var array
@@ -45,38 +52,38 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @var bool
      */
-    protected static $eagerLoading = [];
+    protected static $lazyLoading = [];
 
     /**
      * @var array
      */
-    protected static $eagerLoadingCache = [];
+    protected static $lazyLoadingCache = [];
 
     /**
-     * Disables references eager loading
+     * Disables references lazy loading
      */
-    public static function disableEagerLoading()
+    public static function disableLazyLoading()
     {
-        static::$eagerLoading[static::class] = false;
+        static::$lazyLoading[static::class] = false;
     }
 
     /**
-     * Enables references eager loading
+     * Enables references lazy loading
      */
-    public static function enableEagerLoading()
+    public static function enableLazyLoading()
     {
-        static::$eagerLoading[static::class] = true;
+        static::$lazyLoading[static::class] = true;
     }
 
     /**
-     * Determines if eager loading is enabled
-     * By default is enabled
+     * Determines if lazy loading is enabled
+     * By default is disabled
      *
      * @return bool
      */
-    public static function isEagerLoadingEnabled()
+    public static function isLazyLoadingEnabled()
     {
-        return isset(static::$eagerLoading[static::class]) ? static::$eagerLoading[static::class]: true;
+        return isset(static::$lazyLoading[static::class]) ? static::$lazyLoading[static::class]: true;
     }
 
     /**
@@ -95,7 +102,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
     /**
      * @param $value
-     * @return \Phalcon\Mvc\Collection
+     * @return \Phalcon\Mvc\Collection|bool
      */
     final public static function getMapped($value)
     {
@@ -117,11 +124,22 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     protected static function ensureMappingCache($value)
     {
-        $cacheKey = sprintf('%s:%s', get_called_class(), $value);
-        if (!isset(static::$eagerLoadingCache[$cacheKey])) {
-            static::$eagerLoadingCache[$cacheKey] = static::findById($value);
+        $calledClass = get_called_class();
+        $cacheKey = sprintf('%s:%s', $calledClass, $value);
+
+        if (!isset(static::$lazyLoadingCache[$cacheKey])) {
+
+            $collection = static::findById($value);
+
+            if($collection && isset(static::$lazyLoading[$calledClass]) && static::$lazyLoading[$calledClass] == true) {
+                $proxyClass = ProxyBuilder::getLazyLoadingClass($calledClass, Di::getDefault());
+                ProxyBuilder::assignProxyValues($proxyClass, $collection);
+
+                $collection = $proxyClass;
+            }
+            static::$lazyLoadingCache[$cacheKey] = $collection;
         }
-        return static::$eagerLoadingCache[$cacheKey];
+        return static::$lazyLoadingCache[$cacheKey];
     }
 
     /**
@@ -130,8 +148,8 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     protected static function clearMappingCache($value)
     {
         $cacheKey = sprintf('%s:%s', get_called_class(), $value);
-        if (isset(static::$eagerLoadingCache[$cacheKey])) {
-            unset(static::$eagerLoadingCache[$cacheKey]);
+        if (isset(static::$lazyLoadingCache[$cacheKey])) {
+            unset(static::$lazyLoadingCache[$cacheKey]);
         }
     }
 
@@ -254,7 +272,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
     /**
      * @param array|null $parameters
-     * @return Collection
+     * @return Collection|false
      * @throws \Exception
      */
     public static function findFirst(array $parameters = null)
@@ -314,31 +332,27 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         }
 
         $data = $this->toArray();
-        $success = false;
+        $metadata = $this->getMetadata();
+        $currentValues = [];
 
-        if (static::isEagerLoadingEnabled()) {
-            $metadata = $this->getMetadata();
-
-            $currentValues = [];
-
-            if (!empty($metadata)) {
-                foreach ($this->getObjectProperties() as $object => $value) {
-                    if (isset($metadata[$object])) {
-                        $currentValues[$object] = $this->{$object};
-                        if (Scalar::isScalar($metadata[$object])) {
-                            $data[$object] = Scalar::map($this->{$object}, $metadata[$object]);
-                        } else {
-                            $reflectionClass = new \ReflectionClass($metadata[$object]);
-                            if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
-                                $data[$object] = $reflectionClass->getMethod('createReference')
-                                    ->invoke(null, $this->{$object});
-                            }
+        if (!empty($metadata)) {
+            foreach ($this->getObjectProperties() as $object => $value) {
+                if (isset($metadata[$object])) {
+                    $currentValues[$object] = $this->{$object};
+                    if (Scalar::isScalar($metadata[$object])) {
+                        $data[$object] = Scalar::map($this->{$object}, $metadata[$object]);
+                    } else {
+                        $reflectionClass = new \ReflectionClass($metadata[$object]);
+                        if ($reflectionClass->isSubclassOf(MapperInterface::class)) {
+                            $data[$object] = $reflectionClass->getMethod('createReference')
+                                ->invoke(null, $this->{$object});
                         }
                     }
                 }
             }
         }
 
+        $success = false;
         $status = $collection->save($data, ["w" => true]);
         if (is_array($status)) {
             if (isset($status['ok'])) {
@@ -380,10 +394,6 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $data[$k] = $v;
         }
 
-        if ($this->__operation === 'save') {
-            $data['__eager_loading'] = static::isEagerLoadingEnabled();
-        }
-
         return $data;
     }
 
@@ -407,8 +417,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 'di' => true,
                 '_collectionManager' => true,
                 'mappingFieldsCache' => true,
-                '__eager_loading' => true,
+                '__lazy_loading' => true,
                 '__is_mapped' => true,
+                '__is_property_mapped' => true,
                 '__operation' => true,
                 '__cursorFields' => true
             ];
@@ -428,7 +439,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @param $className
      * @param $value
-     * @return string]
+     * @return string
      */
     private function getCacheKey($className, $value)
     {
@@ -484,18 +495,39 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
-     *
+     * Apply mappings for all defined mappers in collection. It has recursive flow, so deep relation
+     * resolving will be performed. For an individual property, use applyMapping(PROPERTY_NAME) method.
      */
-    public function applyMapping()
+    public function map()
     {
         if (!$this->__is_mapped) {
             $metadata = $this->getMetadata();
             foreach ($this->getObjectProperties() as $propName => $value) {
                 if (isset($metadata[$propName])) {
-                    $this->{$propName} = $this->mapField($metadata[$propName], $this->{$propName});
+                    $this->mapProperty($propName);
+                    if (is_object($this->{$propName}) && method_exists($this->{$propName}, 'map')) {
+                        $this->{$propName}->map();
+                    }
                 }
             }
             $this->__is_mapped = true;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Apply mappings for one property, given by a name
+     * @param $propertyName
+     */
+    protected function mapProperty($propertyName)
+    {
+        if (!isset($this->__is_property_mapped[$propertyName])) {
+            $metadata = $this->getMetadata();
+            if (isset($metadata[$propertyName])) {
+                $this->{$propertyName} = $this->mapField($metadata[$propertyName], $this->{$propertyName});
+            }
+            $this->__is_property_mapped[$propertyName] = true;
         }
     }
 
@@ -525,5 +557,13 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             $annotations = (new \Vegas\ODM\Mapping\Driver\Annotation(static::class))->getAnnotations();
         }
         return $annotations ? $annotations : [];
+    }
+
+    public function __set($name, $value)
+    {
+        $methodName = 'set' . ucfirst($name);
+        if (method_exists($this, $methodName)) {
+            call_user_func_array([$this, $methodName], [$value]);
+        }
     }
 }

@@ -8,6 +8,7 @@ namespace Vegas\Tests\ODM\Collection;
 
 use Fixtures\Collection\Category;
 use Fixtures\Collection\Product;
+use Fixtures\Lib\ExtendedCursor;
 
 class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
 {
@@ -22,10 +23,35 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    public function testQueryWithGivenFields()
+    {
+        /** @var Product $collection */
+        $collection = new Product;
+        $collection->setName('test');
+        $collection->setPrice(199);
+        $collection->save();
+
+        $parameters = [
+            'fields' => [ 'name' ]
+        ];
+
+        $cursor = Product::_getCursor($parameters, $collection, $collection->getConnection());
+
+        $cursor = new \Fixtures\Collection\Lib\ExtendedCursor(
+            $cursor,
+            $collection,
+            is_array($parameters) &&  isset($parameters['fields']) ? $parameters['fields'] : null
+        );
+
+        $fields = $cursor->getFields();
+        $this->assertEquals(1, count($fields));
+        $item = $cursor->current();
+
+        $this->assertEquals($collection->getName(), $item->getName());
+    }
+
     public function testShouldReturnLazyLoadingCursor()
     {
-        Category::enableEagerLoading();
-
         $parentCategory = new Category();
         $parentCategory->setName('Parent category');
         $parentCategory->setDesc('Parent category');
@@ -39,6 +65,8 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
             $category->save();
         }
 
+        Category::enableLazyLoading();
+
         $categories = Category::find([
             [
                 'category' => [
@@ -47,13 +75,12 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
             ]
         ]);
         $this->assertInstanceOf('\Vegas\Odm\Collection\LazyLoadingCursor', $categories);
+
         foreach ($categories as $category) {
             $this->assertInstanceOf('\Fixtures\Collection\Category', $category);
             $this->assertInstanceOf('\Fixtures\Collection\Category', $category->getCategory());
         }
 
-        Category::disableEagerLoading();
-
         $categories = Category::find([
             [
                 'category' => [
@@ -64,13 +91,16 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Vegas\Odm\Collection\LazyLoadingCursor', $categories);
         foreach ($categories as $category) {
             $this->assertInstanceOf('\Fixtures\Collection\Category', $category);
-            $this->assertTrue(\MongoDBRef::isRef($category->getCategory()));
+
+            $reflectionClass = new \ReflectionClass(get_class($category));
+            $categoryProperty = $reflectionClass->getProperty('category');
+            $categoryProperty->setAccessible(true);
+            $this->assertTrue(\MongoDBRef::isRef($categoryProperty->getValue($category)));
         }
     }
 
     public function testShouldReturnArray()
     {
-        Category::enableEagerLoading();
         $categories = Category::find([
             [
                 'category' => [

@@ -50,6 +50,14 @@ class DbRef extends \MongoDBRef
         if ($id instanceof \Phalcon\Mvc\Collection) {
             $id = $id->getId();
         }
+        if (is_array($collection) && self::isRef($collection)) {
+            if (isset($collection['$id'])) {
+                $id = $collection['$id'];
+            }
+            if (isset($collection['$ref'])) {
+                $collection = $collection['$ref'];
+            }
+        }
         if (!$id instanceof \MongoId && $id !== null) {
             $id = new \MongoId($id);
         }

@@ -22,6 +22,16 @@ class DbRefTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals((new Product())->getSource(), $dbRef['$ref']);
     }
 
+    public function testShouldCreateDBRefFromString()
+    {
+        $id = new \MongoId();
+        $dbRef = DbRef::create((new Product())->getSource(), (string)$id);
+
+        $this->assertTrue(\MongoDbRef::isRef($dbRef));
+        $this->assertEquals($id, $dbRef['$id']);
+        $this->assertEquals((new Product())->getSource(), $dbRef['$ref']);
+    }
+
     public function testShouldCreateDBRefFromCollection()
     {
         $collection = new Product();

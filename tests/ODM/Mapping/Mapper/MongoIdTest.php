@@ -32,4 +32,11 @@ class MongoIdTest extends \PHPUnit_Framework_TestCase
         $mongoId = (new MongoId())->createReference($id);
         $this->assertNull($mongoId);
     }
+
+    public function testGetMappedMethod()
+    {
+        $this->assertInstanceOf('\MongoId', MongoId::getMapped('51b14c2de8e185801f000006'));
+        $this->assertInstanceOf('\MongoId', MongoId::getMapped(['$id' => '51b14c2de8e185801f000006']));
+        $this->assertInstanceOf('\MongoId', MongoId::getMapped(' 51b14c2de8e185801f000006'));
+    }
 }

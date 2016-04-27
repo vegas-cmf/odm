@@ -12,7 +12,8 @@
 
 namespace Vegas\ODM\Mapping\Driver;
 
-use Vegas\ODM\Mapping\Driver\Exception\AnnotationNotFoundException;
+use Vegas\ODM\Mapping\Driver\Annotation\Parser;
+use Vegas\ODM\Mapping\Driver\Exception\UnsupportedTargetException;
 
 /**
  * Class Annotation
@@ -20,23 +21,6 @@ use Vegas\ODM\Mapping\Driver\Exception\AnnotationNotFoundException;
  */
 class Annotation
 {
-    /**
-     * Required annotation
-     */
-    const MAPPER_ANNOTATION = '@Mapper';
-
-    /**
-     * Variable type annotation
-     */
-    const VAR_ANNOTATION = '@var';
-
-    /**
-     * @var array
-     */
-    private $requiredAnnotations = [
-        self::MAPPER_ANNOTATION, self::VAR_ANNOTATION
-    ];
-
     /**
      * @var \ReflectionClass|\ReflectionObject
      */
@@ -53,94 +37,7 @@ class Annotation
     public function __construct($target)
     {
         $this->reflection = $this->getTargetReflection($target);
-        $this->requiredAnnotations []= strtolower(self::MAPPER_ANNOTATION);
-        $this->parsePropertiesAnnotation();
-    }
-
-    /**
-     * @param $target
-     * @return \ReflectionClass|\ReflectionObject
-     */
-    protected function getTargetReflection($target)
-    {
-        if (is_object($target)) {
-            return new \ReflectionObject($target);
-        } else if (is_string($target)) {
-            return new \ReflectionClass($target);
-        }
-    }
-
-    /**
-     *
-     */
-    protected function parsePropertiesAnnotation()
-    {
-        $annotations = [];
-        foreach ($this->reflection->getProperties() as $property) {
-            $docBlock = $property->getDocComment();
-            if (!$docBlock) {
-                continue;
-            }
-            try {
-                $annotations[$property->getName()] = $this->extractMapperAnnotation($property->getDocComment());
-            } catch (AnnotationNotFoundException $e) {
-                continue;
-            }
-        }
-        $this->annotations = $annotations;
-    }
-
-    /**
-     * @param $annotations
-     * @return bool
-     */
-    private function isValid($annotations)
-    {
-        $valid = [];
-        foreach ($this->requiredAnnotations as $annotation) {
-            if (in_array($annotation, $annotations)) {
-                $valid[strtolower($annotation)] = true;
-            }
-        }
-
-        return count($valid) == 2;
-    }
-
-    /**
-     * Extract variable type and search for @mapper annotation
-     *
-     * @param $docBlock
-     * @return string
-     * @throws AnnotationNotFoundException
-     */
-    protected function extractMapperAnnotation($docBlock)
-    {
-        $regex = sprintf("#(%s)(.*?)(\n|\s|\r\t)#U", implode('|', $this->requiredAnnotations));
-        preg_match_all($regex, $docBlock, $matches);
-        if (empty($matches) || count($matches) < 3) {
-            throw new AnnotationNotFoundException();
-        }
-        if (!$this->isValid($matches[1])) {
-            throw new AnnotationNotFoundException();
-        }
-        $mapperAnnotationIndex = array_search(self::MAPPER_ANNOTATION, $matches[1]);
-        if ($mapperAnnotationIndex === false) {
-            $mapperAnnotationIndex = array_search(strtolower(self::MAPPER_ANNOTATION), $matches[1]);
-        }
-        if ($mapperAnnotationIndex !== false) {
-            $type = trim($matches[2][$mapperAnnotationIndex]);
-        }
-        if (!isset($type) || !$type) {
-            $varAnnotationIndex = array_search(self::VAR_ANNOTATION, $matches[1]);
-            $type = trim($matches[2][$varAnnotationIndex]);
-            if ($varAnnotationIndex === false || !isset($matches[2][$varAnnotationIndex])) {
-                throw new AnnotationNotFoundException();
-            }
-        } else {
-            $type = trim($matches[2][$mapperAnnotationIndex]);
-        }
-
-        return trim($type);
+        $this->parseAnnotation();
     }
 
     /**
@@ -149,5 +46,29 @@ class Annotation
     public function getAnnotations()
     {
         return $this->annotations;
+    }
+
+    /**
+     * @param $target
+     * @return \ReflectionClass|\ReflectionObject
+     * @throws UnsupportedTargetException
+     */
+    protected function getTargetReflection($target)
+    {
+        if (is_object($target)) {
+            return new \ReflectionObject($target);
+        } else if (is_string($target)) {
+            return new \ReflectionClass($target);
+        }
+
+        throw new UnsupportedTargetException;
+    }
+
+    protected function parseAnnotation()
+    {
+        $parser = new Parser($this->reflection);
+        $parser->run();
+
+        $this->annotations = $parser->getAnnotations();
     }
 }

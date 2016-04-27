@@ -8,8 +8,12 @@
 namespace Vegas\Tests\ODM;
 
 use Fixtures\Collection\Category;
+use Fixtures\Collection\Foo;
+use Fixtures\Collection\InvalidCollection;
+use Fixtures\Collection\MissingCollection;
 use Fixtures\Collection\Product;
 use Phalcon\Di;
+use Vegas\ODM\Collection;
 
 class CollectionTest extends \PHPUnit_Framework_TestCase
 {
@@ -23,9 +27,6 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         foreach (Product::find() as $product) {
             $product->delete();
         }
-
-        Category::enableEagerLoading();
-        Product::enableEagerLoading();
 
         // disable cache
         $this->odmMappingCache = Di::getDefault()->get('odmMappingCache');
@@ -47,12 +48,51 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $metadata = [
             "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
+            "tags" => "\\Fixtures\\Collection\\Tag",
             "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
             "isActive" => "boolean"
         ];
 
         $this->assertEquals($metadata, $collection->getMetadata());
     }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testInvalidCollection()
+    {
+        $collection = new InvalidCollection();
+        $collection->setBar('test');
+        $collection->save();
+    }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testExceptionOnFind()
+    {
+        $collection = InvalidCollection::find();
+    }
+
+    public function testEagerLoadingOption()
+    {
+        $category = new Category();
+        $category->setName('Category 1');
+        $category->setDesc('Category 1 desc');
+        $category->save();
+
+        $product = new Product();
+        $product->setName('Product 1');
+        $product->setPrice(100);
+        $product->setIsActive(true);
+        $product->setCategory($category);
+        $product->setCreatedAt(time());
+        $product->save();
+
+        Product::disableLazyLoading();
+        $this->assertFalse(Product::isLazyLoadingEnabled());
+    }
+
 
     public function testShouldSaveRecordWithCorrectReferences()
     {
@@ -92,7 +132,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
             '_id' => $category->getId()
         ];
 
-        $this->assertEquals($toArray, $category->toArray());
+        $this->assertEquals($toArray, $category->map()->toArray());
     }
 
     public function testShouldMapValues()
@@ -125,40 +165,6 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Fixtures\Collection\Category', $testProduct->getCategory()->getCategory());
     }
 
-    public function testShouldSaveInfoAboutEagerLoading()
-    {
-        Category::disableEagerLoading();
-        Product::disableEagerLoading();
-
-        $category = new Category();
-        $category->setName('Category 1');
-        $category->setDesc('Category 1 desc');
-        $category->save();
-
-        $product = new Product();
-        $product->setName('Product 1');
-        $product->setPrice(100);
-        $product->setIsActive(true);
-        $product->setCreatedAt(time());
-
-        $reflectionObj = new \ReflectionObject($product);
-        $prop = $reflectionObj->getProperty('category');
-        $prop->setAccessible(true);
-        $prop->setValue($product, $category->getId());
-
-        $product->save();
-
-        $productTest = Product::findById($product->getId());
-        $this->assertNotInstanceOf('Fixtures\Collection\Category', $productTest->getCategory());
-        $this->assertInstanceOf('\MongoId', $productTest->getCategory());
-
-        Product::enableEagerLoading();
-
-        $productTest = Product::findById($product->getId());
-        $this->assertNotInstanceOf('Fixtures\Collection\Category', $productTest->getCategory());
-        $this->assertInstanceOf('\MongoId', $productTest->getCategory());
-    }
-
     public function testShouldCacheAnnotations()
     {
         $mongo = Di::getDefault()->get('mongo');
@@ -183,4 +189,62 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(0, $mongo->cache->find()->count());
     }
+
+    public function testShouldCheckMappedValues()
+    {
+        $this->assertFalse(Collection::getMapped(false));
+
+        $product = new Product();
+        $product->setName('Product 1');
+        $product->setPrice(100);
+        $product->setIsActive(true);
+        $product->setCreatedAt(time());
+        $product->save();
+
+        $this->assertInstanceOf(Product::class, Product::getMapped($product));
+    }
+
+    public function testShouldCheckIfFindFirstReturnsFalse()
+    {
+        $product = Product::findFirst([
+            'conditions' => [
+                'undefined_filed' => [
+                    'test' => 'test'
+                ]
+            ]
+        ]);
+
+        $this->assertFalse($product);
+    }
+
+    public function testShouldSaveNotLoadedReference()
+    {
+        $category = new Category();
+        $category->setName('Category 1');
+        $category->setDesc('Category 1 desc');
+        $category->save();
+
+        $product = new Product();
+        $product->setCategory($category);
+        $product->setName('Product 1');
+        $product->setPrice(100);
+        $product->setIsActive(true);
+        $product->setCreatedAt(time());
+        $product->save();
+
+        $product = Product::findById($product->getId());
+        $product->save();
+
+        $product = Product::findById($product->getId());
+
+        $category1 = $product->getCategory();
+        $category2 = $product->getCategory();
+
+        $this->assertInstanceOf('Fixtures\Collection\Category', $category1);
+
+        $this->assertInstanceOf('Fixtures\Collection\Category', $category2);
+
+        $this->assertSame($category2->getName(), $category1->getName());
+    }
+
 }

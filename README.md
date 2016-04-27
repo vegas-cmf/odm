@@ -1,6 +1,9 @@
 Vegas CMF ODM
 =============
 
+[![Travis Status](https://travis-ci.org/vegas-cmf/odm.svg?branch=feature-proxy)](https://travis-ci.org/vegas-cmf/modmvc.svg?branch=feature-proxy)
+[![Coverage Status](https://coveralls.io/repos/github/vegas-cmf/odm/badge.svg?branch=feature-proxy)](https://coveralls.io/github/vegas-cmf/odm?branch=feature-proxy)
+
 Compatible with: Phalcon >= 2.0
 
 Example usage
