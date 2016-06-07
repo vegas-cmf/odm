@@ -45,7 +45,7 @@ class File
      */
     public function getProxyFileName($className)
     {
-        return $this->directory . DIRECTORY_SEPARATOR . str_replace('\\', '', $className) . '.php';
+        return $this->directory . DIRECTORY_SEPARATOR . str_replace('\\', '', $className) . '-' . get_current_user() . '.php';
     }
 
 }
