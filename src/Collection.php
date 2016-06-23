@@ -145,7 +145,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @param $value
      */
-    protected static function clearMappingCache($value)
+    protected static function clearEntityMappingCache($value)
     {
         $cacheKey = sprintf('%s:%s', get_called_class(), $value);
         if (isset(static::$lazyLoadingCache[$cacheKey])) {
@@ -371,7 +371,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
 
         // clears cache for saved document
         if ($success) {
-            $this->clearMappingCache($this->_id);
+            $this->clearEntityMappingCache($this->_id);
         }
 
         $this->__operation = false;
@@ -537,6 +537,15 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     protected function getMetadataCacheKey()
     {
         return '_metadata_' . md5(static::class);
+    }
+
+
+    /**
+     * Clears mapping cache
+     */
+    public static function clearMappingCache()
+    {
+        static::$lazyLoadingCache = [];
     }
 
     /**
