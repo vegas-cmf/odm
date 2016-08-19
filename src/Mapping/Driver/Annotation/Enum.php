@@ -31,16 +31,8 @@ class Enum
     /**
      * Allowed annotation const
      */
-    /*const ANNOTATION_ALLOWED = [
+    const ANNOTATION_ALLOWED = [
         self::MAPPER_ANNOTATION,
         self::VAR_ANNOTATION
-    ];*/
-
-    public static function getAllowedAnnotations()
-    {
-        return [
-            self::MAPPER_ANNOTATION,
-            self::VAR_ANNOTATION
-        ];
-    }
+    ];
 }

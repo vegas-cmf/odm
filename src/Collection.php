@@ -559,23 +559,14 @@ class Collection extends MongoCollection implements MapperInterface
     protected function getObjectProperties()
     {
         $reserved = $this->getReservedAttributes();
-        /*return array_filter(get_object_vars($this), function($var) use ($reserved) {
+        return array_filter(get_object_vars($this), function($var) use ($reserved) {
             $allowed = !isset($reserved[$var]);
             if ($this->__cursorFields) {
                 $allowed = isset($this->__cursorFields[$var]) && $allowed;
             }
 
             return $allowed;
-        }, ARRAY_FILTER_USE_KEY);*/
-        $results = [];
-        foreach (get_object_vars($this) as $key => $value) {
-            $allowed = !isset($reserved[$key]);
-            if ($this->__cursorFields) {
-                $allowed = isset($this->__cursorFields[$key]) && $allowed;
-            }
-            $allowed && $results[$key] = $value;
-        }
-        return $results;
+        }, ARRAY_FILTER_USE_KEY);
     }
 
     /**
