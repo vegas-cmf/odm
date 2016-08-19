@@ -17,7 +17,8 @@
         stopOnIncomplete="false"
         stopOnSkipped="false"
 
-        strict="false"
+        checkForUnintentionallyCoveredCode="false"
+        beStrictAboutChangesToGlobalState="false"
         verbose="true"
         bootstrap="../tests/bootstrap.php">
     <testsuites>

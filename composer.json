@@ -11,14 +11,14 @@
     ],
     "repositories": [],
     "require": {
-        "php": ">=5.6",
+        "php": "^5.6 || ^7.0",
         "ext-phalcon": "^3.0",
         "phalcon/incubator": "^3.0",
         "ocramius/proxy-manager": "1.0.2"
     },
     "require-dev": {
         "phalcon/devtools": ">=2.0",
-        "phpunit/phpunit": "4.*",
+        "phpunit/phpunit": "5.*",
         "satooshi/php-coveralls": "^1.0",
         "ext-mongodb": ">=1.1"
     },
