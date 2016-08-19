@@ -10,6 +10,7 @@ use Vegas\ODM\Mapping\MapperInterface;
 
 /**
  * Class MongoId
+ * @deprecated use ObjectID mapper instead
  * @package Vegas\ODM\Mapping\Mapper
  */
 class MongoId implements MapperInterface

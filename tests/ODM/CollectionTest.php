@@ -49,8 +49,9 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
             "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
             "tags" => "\\Fixtures\\Collection\\Tag",
-            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
-            "isActive" => "boolean"
+            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\UTCDateTime",
+            "isActive" => "boolean",
+            "_id" => "\\Vegas\\ODM\\Mapping\\Mapper\\ObjectID"
         ];
 
         $this->assertEquals($metadata, $collection->getMetadata());
@@ -159,7 +160,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
 
         $testProduct = Product::findFirst();
         $this->assertInstanceOf('\Fixtures\Collection\Category', $testProduct->getCategory());
-        $this->assertInstanceOf('\MongoDate', $testProduct->getCreatedAt());
+        $this->assertInstanceOf('\MongoDB\BSON\UTCDatetime', $testProduct->getCreatedAt());
         $this->assertInternalType('boolean', $testProduct->isActive());
         $this->assertInternalType('int', $testProduct->getPrice());
         $this->assertInstanceOf('\Fixtures\Collection\Category', $testProduct->getCategory()->getCategory());
@@ -168,13 +169,15 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     public function testShouldCacheAnnotations()
     {
         $mongo = Di::getDefault()->get('mongo');
-        $mongo->cache->remove();
+//        $mongo->cache->remove();
+        $this->odmMappingCache->flush();
 
         Di::getDefault()->set('odmMappingCache', $this->odmMappingCache);
         $product = new Product();
         $product->getMetadata();
 
-        $this->assertGreaterThan(0, $mongo->cache->find()->count());
+//        $this->assertGreaterThan(0, $mongo->cache->find()->count());
+        $this->assertGreaterThan(0, count($this->odmMappingCache->queryKeys()));
 
         Di::getDefault()->remove('odmMappingCache');
     }
@@ -182,12 +185,14 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
     public function testShouldNotCacheAnnotations()
     {
         $mongo = Di::getDefault()->get('mongo');
-        $mongo->cache->remove();
+//        $mongo->cache->remove();
+        $this->odmMappingCache->flush();
 
         $product = new Product();
         $product->getMetadata();
 
-        $this->assertEquals(0, $mongo->cache->find()->count());
+//        $this->assertEquals(0, $mongo->cache->find()->count());
+        $this->assertEquals(0, count($this->odmMappingCache->queryKeys()));
     }
 
     public function testShouldCheckMappedValues()

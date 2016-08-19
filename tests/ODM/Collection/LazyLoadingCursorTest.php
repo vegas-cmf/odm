@@ -9,6 +9,7 @@ namespace Vegas\Tests\ODM\Collection;
 use Fixtures\Collection\Category;
 use Fixtures\Collection\Product;
 use Fixtures\Lib\ExtendedCursor;
+use Vegas\ODM\Mongo\DbRef;
 
 class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
 {
@@ -95,7 +96,7 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
             $reflectionClass = new \ReflectionClass(get_class($category));
             $categoryProperty = $reflectionClass->getProperty('category');
             $categoryProperty->setAccessible(true);
-            $this->assertTrue(\MongoDBRef::isRef($categoryProperty->getValue($category)));
+            $this->assertTrue(DbRef::isRef($categoryProperty->getValue($category)));
         }
     }
 
@@ -115,7 +116,7 @@ class LazyLoadingCursorTest extends \PHPUnit_Framework_TestCase
         $categoriesArray = $categories->toArray();
         $i = 0;
         foreach ($categories as $category) {
-            $this->assertEquals((string) $category->getId(), (string) $categoriesArray[$i++]['_id']);
+            $this->assertEquals((string) $category->getId(), (string) $categoriesArray[$i++]->toArray()['_id']);
         }
     }
 }

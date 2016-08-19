@@ -6,6 +6,8 @@
 
 namespace Fixtures\Collection;
 
+use MongoDB\BSON\ObjectID;
+use Phalcon\Db\Adapter\MongoDB\Exception\InvalidArgumentException;
 use \Vegas\ODM\Collection;
 use Vegas\ODM\Mapping\MapperInterface;
 use Vegas\ODM\Mongo\DbRef;
@@ -42,7 +44,12 @@ class Status implements MapperInterface
 
     public static function getMapped($value)
     {
-        if (!$value or !\MongoId::isValid($value)) {
+        if (!$value) {
+            return false;
+        }
+        try {
+            new ObjectID($value);
+        } catch (InvalidArgumentException $e) {
             return false;
         }
 
@@ -51,7 +58,7 @@ class Status implements MapperInterface
 
     public function save()
     {
-        $this->_id = new \MongoId();
+        $this->_id = new ObjectID(null);
         self::$list[(string)$this->_id] = $this;
     }
 }

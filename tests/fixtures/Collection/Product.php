@@ -35,7 +35,7 @@ class Product extends Collection
 
     /**
      * @var \MongoDate
-     * @Mapper \Vegas\ODM\Mapping\Mapper\MongoDate
+     * @Mapper \Vegas\ODM\Mapping\Mapper\UTCDateTime
      */
     protected $createdAt;
 

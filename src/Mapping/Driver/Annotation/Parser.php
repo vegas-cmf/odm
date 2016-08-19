@@ -42,7 +42,7 @@ class Parser
     public function __construct(\ReflectionClass $reflection)
     {
         $this->reflection = $reflection;
-        $this->allowedAnnotations = array_merge(Enum::ANNOTATION_ALLOWED, [strtolower(Enum::MAPPER_ANNOTATION)]);
+        $this->allowedAnnotations = array_merge(Enum::getAllowedAnnotations(), [strtolower(Enum::MAPPER_ANNOTATION)]);
     }
 
     /**

@@ -7,6 +7,7 @@
 namespace Vegas\Tests\ODM;
 
 use Fixtures\Collection\Product;
+use MongoDB\BSON\ObjectID;
 use Vegas\ODM\Mongo\DbRef;
 
 class DbRefTest extends \PHPUnit_Framework_TestCase
@@ -14,20 +15,20 @@ class DbRefTest extends \PHPUnit_Framework_TestCase
 
     public function testShouldCreateDBRefFromMongoId()
     {
-        $id = new \MongoId();
+        $id = new ObjectID(null);
         $dbRef = DbRef::create((new Product())->getSource(), $id);
 
-        $this->assertTrue(\MongoDbRef::isRef($dbRef));
+        $this->assertTrue(DbRef::isRef($dbRef));
         $this->assertEquals($id, $dbRef['$id']);
         $this->assertEquals((new Product())->getSource(), $dbRef['$ref']);
     }
 
     public function testShouldCreateDBRefFromString()
     {
-        $id = new \MongoId();
+        $id = new ObjectID(null);
         $dbRef = DbRef::create((new Product())->getSource(), (string)$id);
 
-        $this->assertTrue(\MongoDbRef::isRef($dbRef));
+        $this->assertTrue(DbRef::isRef($dbRef));
         $this->assertEquals($id, $dbRef['$id']);
         $this->assertEquals((new Product())->getSource(), $dbRef['$ref']);
     }
@@ -39,8 +40,7 @@ class DbRefTest extends \PHPUnit_Framework_TestCase
         $collection->save();
 
         $dbRef = DbRef::create($collection->getSource(), $collection);
-
-        $this->assertTrue(\MongoDbRef::isRef($dbRef));
+        $this->assertTrue(DbRef::isRef($dbRef));
         $this->assertEquals($collection->getId(), $dbRef['$id']);
         $this->assertEquals($collection->getSource(), $dbRef['$ref']);
     }
@@ -56,8 +56,8 @@ class DbRefTest extends \PHPUnit_Framework_TestCase
 
     public function testShouldReturnNullOneArgumentMongoId()
     {
-        $id = new \MongoId();
+        $id = new ObjectID(null);
         $dbRef = DbRef::create($id);
-        $this->assertInstanceOf('\MongoId', $dbRef);
+        $this->assertInstanceOf(ObjectID::class, $dbRef);
     }
 }

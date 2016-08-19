@@ -12,9 +12,11 @@
  
 namespace Vegas\ODM\Mongo;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * Class DbRef
- * Allows to create MongoDBRef directly from \Phalcon\Mvc\Collection object
+ * Allows to create object with former MongoDBRef structure directly from \Phalcon\Mvc\Collection object
  * <code>
  * $user = \User\Models\User::findFirst();
  * $doc = new \Content\Models\Article();
@@ -30,14 +32,31 @@ namespace Vegas\ODM\Mongo;
  * @package Vegas\ODM\Mongo
  * @return array
  */
-class DbRef extends \MongoDBRef
+class DbRef
 {
+    /**
+     * @static
+     * @var $refKey
+     */
+    protected static $refKey = '$ref';
+
+    /**
+     * @static
+     * @var $idKey
+     */
+    protected static $idKey = '$id';
+
+    /**
+     * @static
+     * @var $dbKey
+     */
+    protected static $dbKey = '$db';
 
     /**
      * Creates a new database reference
      *
      * @param string|\Phalcon\Mvc\Collection $collection
-     * @param mixed|\MongoId|\Phalcon\Mvc\Collection $id
+     * @param mixed|ObjectID|\Phalcon\Mvc\Collection $id
      * @param string $database
      * @return array
      */
@@ -51,18 +70,18 @@ class DbRef extends \MongoDBRef
             $id = $id->getId();
         }
         if (is_array($collection) && self::isRef($collection)) {
-            if (isset($collection['$id'])) {
-                $id = $collection['$id'];
+            if (isset($collection[self::$idKey])) {
+                $id = $collection[self::$idKey];
             }
-            if (isset($collection['$ref'])) {
-                $collection = $collection['$ref'];
+            if (isset($collection[self::$refKey])) {
+                $collection = $collection[self::$refKey];
             }
         }
-        if (!$id instanceof \MongoId && $id !== null) {
-            $id = new \MongoId($id);
+        if (!$id instanceof ObjectID && $id !== null) {
+            $id = new ObjectID($id);
         }
 
-        if ($collection instanceof \MongoId) {
+        if ($collection instanceof ObjectID) {
             return $collection;
         }
 
@@ -70,6 +89,34 @@ class DbRef extends \MongoDBRef
             return null;
         }
 
-        return parent::create($collection, $id, $database);
+        $ref = [
+            self::$idKey    => $id,
+            self::$refKey   => $collection
+        ];
+        if (is_string($database)) {
+            $ref[self::$dbKey] = $database;
+        }
+
+        return $ref;
+    }
+
+    /**
+     * This not actually follow the reference, so it does not determine if it is broken or not.
+     * It merely checks that $ref is in valid database reference format (in that it is an object or array with $ref and $id fields).
+     *
+     * @link http://php.net/manual/en/mongodbref.isref.php
+     * @static
+     * @param mixed $ref Array or object to check
+     * @return boolean Returns true if $ref is a reference
+     */
+    public static function isRef($ref)
+    {
+        if (is_array($ref)) {
+            return array_key_exists(self::$idKey, $ref) && array_key_exists(self::$refKey, $ref);
+        } elseif (is_object($ref)) {
+            return property_exists($ref, self::$idKey) && property_exists($ref, self::$refKey);
+        }
+
+        return false;
     }
 }

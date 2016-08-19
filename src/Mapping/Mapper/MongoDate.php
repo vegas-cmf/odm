@@ -9,6 +9,11 @@ namespace Vegas\ODM\Mapping\Mapper;
 
 use Vegas\ODM\Mapping\MapperInterface;
 
+/**
+ * Class MongoDate
+ * @deprecated use UTCDateTime mapper instead
+ * @package Vegas\ODM\Mapping\Mapper
+ */
 class MongoDate implements MapperInterface
 {
 

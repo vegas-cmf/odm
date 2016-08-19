@@ -12,9 +12,9 @@
 
 namespace Vegas\ODM\Collection;
 
+use MongoDB\Driver\Cursor;
 use Phalcon\Di;
 use Vegas\ODM\Collection;
-use Vegas\ODM\Proxy;
 use Vegas\ODM\ProxyBuilder;
 
 /**
@@ -24,7 +24,12 @@ use Vegas\ODM\ProxyBuilder;
 class LazyLoadingCursor implements \Iterator
 {
     /**
-     * @var \MongoCursor
+     * @var Cursor
+     */
+    protected $mongoCursor;
+
+    /**
+     * @var \IteratorIterator
      */
     protected $cursor;
 
@@ -40,13 +45,17 @@ class LazyLoadingCursor implements \Iterator
 
     /**
      * LazyLoadingCursor constructor.
-     * @param \MongoCursor $cursor
+     * @param Cursor $cursor
      * @param Collection $collectionClass
      * @param null $fields
      */
-    public function __construct(\MongoCursor $cursor, Collection $collectionClass, $fields = null)
+    public function __construct(Cursor $cursor, Collection $collectionClass, $fields = null)
     {
-        $this->cursor = $cursor;
+//        $this->mongoCursor = $cursor;
+//        $this->cursor = new \IteratorIterator($cursor);
+//        $this->cursor->rewind();    // @see http://php.net/manual/en/class.mongodb-driver-cursor.php#118824
+        $this->mongoCursor = $cursor->toArray();
+        $this->index = 0;
         $this->collectionInstance = $collectionClass;
         $this->fields = $fields;
     }
@@ -56,13 +65,8 @@ class LazyLoadingCursor implements \Iterator
      */
     public function toArray()
     {
-        $array = [];
-        $this->rewind();
-        while ($this->valid()) {
-            $array[] = $this->current()->toArray();
-            $this->next();
-        }
-        return $array;
+        return $this->mongoCursor;
+//        return $this->mongoCursor->toArray();
     }
 
     /**
@@ -74,7 +78,7 @@ class LazyLoadingCursor implements \Iterator
     public function current()
     {
         $collection = clone $this->collectionInstance;
-        $collection->writeAttributes((array) $this->cursor->current());
+        $collection->writeAttributes($this->mongoCursor[$this->index]->toArray());
         if ($this->fields) {
             $collection->setCursorFields($this->fields);
         }
@@ -99,7 +103,7 @@ class LazyLoadingCursor implements \Iterator
      */
     public function next()
     {
-        $this->cursor->next();
+        ++$this->index;
     }
 
     /**
@@ -110,7 +114,7 @@ class LazyLoadingCursor implements \Iterator
      */
     public function key()
     {
-        return $this->cursor->key();
+        return $this->index;
     }
 
     /**
@@ -122,7 +126,7 @@ class LazyLoadingCursor implements \Iterator
      */
     public function valid()
     {
-        return $this->cursor->valid();
+        return array_key_exists($this->index, $this->mongoCursor);
     }
 
     /**
@@ -133,7 +137,8 @@ class LazyLoadingCursor implements \Iterator
      */
     public function rewind()
     {
-        $this->cursor->rewind();
+        $this->index = 0;
+//        throw new \Vegas\Exception('Cannot rewind cursor');
     }
 
     /**
@@ -141,6 +146,6 @@ class LazyLoadingCursor implements \Iterator
      */
     public function count()
     {
-        return $this->cursor->count();
+        return count($this->toArray());
     }
 }

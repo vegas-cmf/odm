@@ -14,7 +14,6 @@ $_SERVER['HTTP_HOST'] = 'vegas.dev';
 $_SERVER['REQUEST_URI'] = '/';
 
 $config = new \Phalcon\Config($configArray);
-$di = new Phalcon\DI\FactoryDefault();
 
 $loader = new Loader();
 $loader->registerNamespaces(
@@ -24,28 +23,41 @@ $loader->registerNamespaces(
 );
 $loader->register();
 
-$di->set('collectionManager', function() use ($di) {
-    return new \Phalcon\Mvc\Collection\Manager();
-}, true);
+// \Phalcon\Mvc\Collection requires non-static binding of service providers.
+class DiProvider
+{
 
-$di->set('mongo', function() use ($config) {
-    $mongo = new \MongoClient();
-    $mongo->selectDB($config->mongo->db)->drop();
-    return $mongo->selectDb($config->mongo->db);
-}, true);
+    public function resolve(\Phalcon\Config $config)
+    {
+        $di = new \Phalcon\Di\FactoryDefault();
 
-$di->set('odmMappingCache', function() use ($di, $config) {
-    $frontCacheClass = $config->mapping->cache->frontend->driverClass;
-    $frontCache = new $frontCacheClass(
-        $config->mapping->cache->frontend->parameters->toArray()
-    );
-    $backCacheClass = $config->mapping->cache->backend->driverClass;
-    $cache = new $backCacheClass(
-        $frontCache,
-        $config->mapping->cache->backend->parameters->toArray()
-    );
+        $di->set('collectionManager', function() use ($di) {
+            return new \Phalcon\Mvc\Collection\Manager();
+        }, true);
 
-    return $cache;
-}, true);
+        $di->set('mongo', function() use ($config) {
+            $mongo = new \Phalcon\Db\Adapter\MongoDB\Client();
+            $mongo->selectDatabase($config->mongo->db)->drop();
+            return $mongo->selectDatabase($config->mongo->db);
+        }, true);
 
-Phalcon\DI::setDefault($di);
+        $di->set('odmMappingCache', function() use ($di, $config) {
+            $frontCacheClass = $config->mapping->cache->frontend->driverClass;
+            $frontCache = new $frontCacheClass(
+                $config->mapping->cache->frontend->parameters->toArray()
+            );
+            $backCacheClass = $config->mapping->cache->backend->driverClass;
+            $cache = new $backCacheClass(
+                $frontCache,
+                $config->mapping->cache->backend->parameters->toArray()
+            );
+
+            return $cache;
+        }, true);
+
+        \Phalcon\Di::setDefault($di);
+    }
+
+}
+
+(new \DiProvider)->resolve($config);

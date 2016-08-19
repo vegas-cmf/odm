@@ -45,8 +45,9 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
             "category" => "\\Fixtures\\Collection\\Category",
             "price" => "int",
             "tags" => "\\Fixtures\\Collection\\Tag",
-            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate",
-            "isActive" => "boolean"
+            "createdAt" => "\\Vegas\\ODM\\Mapping\\Mapper\\UTCDateTime",
+            "isActive" => "boolean",
+            "_id" => "\\Vegas\\ODM\\Mapping\\Mapper\\ObjectID"
         ];
 
         $this->assertEquals($metadata, $annotationParser->getAnnotations());
@@ -54,8 +55,8 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
         $fakeClassSrc =
             "class Test {
                 /**
-                 * @var \\MongoId
-                 * @mapper \\Vegas\\ODM\\Mapping\\Mapper\\MongoId
+                 * @var \\MongoDB\\BSON\\ObjectID
+                 * @mapper \\Vegas\\ODM\\Mapping\\Mapper\\ObjectID
                  */
                 protected \$_id;
 
@@ -72,8 +73,8 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
                 protected \$int;
 
                 /**
-                 * @var \\MongoDate
-                 * @mapper \\Vegas\\ODM\\Mapping\\Mapper\\MongoDate
+                 * @var \\MongoDB\\BSON\\UTCDatetime
+                 * @mapper \\Vegas\\ODM\\Mapping\\Mapper\\UTCDateTime
                  */
                 protected \$date;
 
@@ -88,10 +89,10 @@ class AnnotationTest extends \PHPUnit_Framework_TestCase
 
         $annotationParser = new Annotation($obj);
         $metadata = [
-            "_id" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoId",
+            "_id" => "\\Vegas\\ODM\\Mapping\\Mapper\\ObjectID",
             "float" => "float",
             "int" => "int",
-            "date" => "\\Vegas\\ODM\\Mapping\\Mapper\\MongoDate"
+            "date" => "\\Vegas\\ODM\\Mapping\\Mapper\\UTCDateTime"
         ];
 
         $this->assertEquals($metadata, $annotationParser->getAnnotations());

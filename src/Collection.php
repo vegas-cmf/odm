@@ -6,8 +6,12 @@
 
 namespace Vegas\ODM;
 
+use MongoDB\BSON\ObjectID;
+use Phalcon\Db\Adapter\MongoDB\Client;
 use Phalcon\Di;
-use Phalcon\DiInterface;
+use Phalcon\Mvc\Collection\Document;
+use Phalcon\Mvc\CollectionInterface;
+use Phalcon\Mvc\MongoCollection;
 use Vegas\ODM\Mapping\Mapper\Scalar;
 use Vegas\ODM\Mongo\DbRef;
 use Vegas\ODM\Collection\LazyLoadingCursor;
@@ -17,8 +21,14 @@ use Vegas\ODM\Mapping\MapperInterface;
  * Class Collection
  * @package Vegas\ODM
  */
-class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
+class Collection extends MongoCollection implements MapperInterface
 {
+    /**
+     * @var \MongoDB\BSON\ObjectID
+     * @mapper \Vegas\ODM\Mapping\Mapper\ObjectID
+     */
+    public $_id;
+
     /**
      * @var bool
      */
@@ -83,7 +93,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public static function isLazyLoadingEnabled()
     {
-        return isset(static::$lazyLoading[static::class]) ? static::$lazyLoading[static::class]: true;
+        return isset(static::$lazyLoading[static::class]) ? static::$lazyLoading[static::class]: false;
     }
 
     /**
@@ -110,7 +120,8 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             return false;
         }
         if (DbRef::isRef($value)) {
-            $value = $value['$id'];
+            $arrayRef = (array)$value;
+            $value = new ObjectID($arrayRef['$id']);
         } else if ($value instanceof Collection) {
             $value = $value->getId();
         }
@@ -177,78 +188,106 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     /**
      * @param $params
      * @param Collection $collection
-     * @param $connection
+     * @param Client $connection
      * @return mixed
      * @throws \Exception
      */
+    // @codingStandardsIgnoreStart
     protected static function _getResultCursor($params, $collection, $connection)
     {
-        $source = $collection->getSource();
-        if (empty($source)) {
-            throw new \Exception('Method getSource() returns empty string');
+        // @codingStandardsIgnoreEnd
+
+        /**
+         * Check if "class" clause was defined
+         */
+        if (isset($params['class'])) {
+            $classname = $params['class'];
+
+            $base = new $classname();
+
+            if (!$base instanceof CollectionInterface || $base instanceof Document) {
+                throw new Exception(
+                    "Object of class '".$classname."' must be an implementation of 
+                    Phalcon\\Mvc\\CollectionInterface or an instance of Phalcon\\Mvc\\Collection\\Document"
+                );
+            }
+        } else {
+            $base = $collection;
         }
 
-        /** @var \MongoCollection $mongoCollection */
+        $source = $collection->getSource();
+
+        if (empty($source)) {
+            throw new Exception("Method getSource() returns empty string");
+        }
+
+        /**
+         * @var \Phalcon\Db\Adapter\MongoDB\Collection $mongoCollection
+         */
         $mongoCollection = $connection->selectCollection($source);
 
         if (!is_object($mongoCollection)) {
-            throw new \Exception('Couldn\'t select mongo collection');
+            throw new Exception("Couldn't select mongo collection");
+        }
+
+        $conditions = [];
+
+        if (isset($params[0])||isset($params['conditions'])) {
+            $conditions = (isset($params[0]))?$params[0]:$params['conditions'];
         }
 
         /**
          * Convert the string to an array
          */
-        if (!isset($params[0])) {
-            if (!isset($params['conditions'])) {
-                $conditions = [];
-            } else {
-                $conditions = $params['conditions'];
-            }
-        } else {
-            $conditions = $params[0];
-        }
         if (!is_array($conditions)) {
-            throw new \Exception('Find parameters must be an array');
+            throw new Exception("Find parameters must be an array");
+        }
+
+        $options = [];
+
+        /**
+         * Check if a "limit" clause was defined
+         */
+        if (isset($params['limit'])) {
+            $limit = $params['limit'];
+
+            $options['limit'] = (int)$limit;
+        }
+
+        /**
+         * Check if a "sort" clause was defined
+         */
+        if (isset($params['sort'])) {
+            $sort = $params["sort"];
+
+            $options['sort'] = $sort;
+        }
+
+        /**
+         * Check if a "skip" clause was defined
+         */
+        if (isset($params['skip'])) {
+            $skip = $params["skip"];
+
+            $options['skip'] = (int)$skip;
+        }
+
+        if (isset($params['fields']) && is_array($params['fields']) && !empty($params['fields'])) {
+            $options['projection'] = [];
+
+            foreach ($params['fields'] as $key => $show) {
+                $options['projection'][$key] = $show;
+            }
         }
 
         /**
          * Perform the find
          */
-        if (isset($params['fields'])) {
-            $documentsCursor = $mongoCollection->find($conditions, $params['fields']);
-        } else {
-            $documentsCursor = $mongoCollection->find($conditions);
-        }
+        $cursor = $mongoCollection->find($conditions, $options);
 
-        /**
-         * Check if a 'limit' clause was defined
-         */
-        if (isset($params['limit'])) {
-            $documentsCursor->limit($params['limit']);
-        }
+        $cursor->setTypeMap(['root'=>get_called_class(),'document'=>'object']);
 
-        /**
-         * Check if a 'sort' clause was defined
-         */
-        if (isset($params['sort'])) {
-            $documentsCursor->sort($params['sort']);
-        }
-
-        /**
-         * Check if a 'skip' clause was defined
-         */
-        if (isset($params['skip'])) {
-            $documentsCursor->skip($params['skip']);
-        }
-
-        /**
-         * If a group of specific fields are requested we use a Phalcon\Mvc\Collection\Document instead
-         */
-        if (isset($params['fields'])) {
-            $documentsCursor->fields($params['fields']);
-        }
-
-        return $documentsCursor;
+        return $cursor;
     }
 
     /**
@@ -258,6 +297,10 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public static function find(array $parameters = null)
     {
+        /*if (!static::isLazyLoadingEnabled()) {
+            $parent = get_parent_class();
+            return forward_static_call([$parent, 'find'], $parameters);
+        }*/
         $className = get_called_class();
         /** @var Collection $collection */
         $collection = new $className;
@@ -277,12 +320,20 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     public static function findFirst(array $parameters = null)
     {
+        /*if (!static::isLazyLoadingEnabled()) {
+            return parent::findFirst($parameters);
+        }*/
+        if (is_null($parameters)) {
+            $parameters = ['limit' => 1];
+        } else {
+            $parameters['limit'] = 1;
+        }
         $cursor = static::find($parameters);
         if ($cursor->count() === 0) {
             return false;
         }
 
-        $cursor->next();
+//        $cursor->next();
         return $cursor->current();
     }
 
@@ -294,24 +345,27 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     {
         $this->__operation = 'save';
 
+        $dependencyInjector = $this->_dependencyInjector;
+
+        if (!is_object($dependencyInjector)) {
+            throw new Exception(
+                "A dependency injector container is required to obtain the services related to the ORM"
+            );
+        }
+
         $source = $this->getSource();
+
         if (empty($source)) {
-            throw new \Exception("Method getSource() returns empty string");
+            throw new Exception("Method getSource() returns empty string");
         }
 
         $connection = $this->getConnection();
 
-        /**
-         * Choose a collection according to the collection name
-         */
         $collection = $connection->selectCollection($source);
 
-        /**
-         * Check the dirty state of the current operation to update the current operation
-         */
-        $exists = parent::_exists($collection);
+        $exists = $this->_exists($collection);
 
-        if ($exists === false) {
+        if (false === $exists) {
             $this->_operationMade = self::OP_CREATE;
         } else {
             $this->_operationMade = self::OP_UPDATE;
@@ -327,17 +381,21 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         /**
          * Execute the preSave hook
          */
-        if (parent::_preSave($this->getDI(), $disableEvents, $exists) === false) {
+        if (false === $this->_preSave($dependencyInjector, $disableEvents, $exists)) {
             return false;
         }
 
         $data = $this->toArray();
+
+        /**
+         * Use mappers to replace data into low-level values
+         */
         $metadata = $this->getMetadata();
         $currentValues = [];
 
         if (!empty($metadata)) {
             foreach ($this->getObjectProperties() as $object => $value) {
-                if (isset($metadata[$object])) {
+                if (isset($metadata[$object]) || $object === '_id') {
                     $currentValues[$object] = $this->{$object};
                     if (Scalar::isScalar($metadata[$object])) {
                         $data[$object] = Scalar::map($this->{$object}, $metadata[$object]);
@@ -352,21 +410,35 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
             }
         }
 
+        if (!isset($data['_id'])) {
+            unset($data['_id']);
+        }
+
+        /**
+         * We always use safe stores to get the success state
+         * Save the document
+         */
+        switch ($this->_operationMade) {
+            case self::OP_CREATE:
+                $status = $collection->insertOne($data);
+                break;
+
+            case self::OP_UPDATE:
+                $status = $collection->updateOne(['_id' => $this->_id], ['$set' => $data]);
+                break;
+
+            default:
+                throw new Exception('Invalid operation requested for MongoCollection->save()');
+        }
+
         $success = false;
-        $status = $collection->save($data, ["w" => true]);
-        if (is_array($status)) {
-            if (isset($status['ok'])) {
-                if ($status['ok']) {
-                    $success = true;
-                    if ($exists === false) {
-                        if (isset($data['_id'])) {
-                            $this->_id = $data['_id'];
-                        }
-                    }
-                }
+
+        if ($status->isAcknowledged()) {
+            $success = true;
+
+            if (false === $exists) {
+                $this->_id = $status->getInsertedId();
             }
-        } else {
-            $success = false;
         }
 
         // clears cache for saved document
@@ -375,10 +447,11 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         }
 
         $this->__operation = false;
+
         /**
          * Call the postSave hooks
          */
-        return parent::_postSave($disableEvents, $success, $exists);
+        return $this->_postSave($disableEvents, $success, $exists);
     }
 
     /**
@@ -443,7 +516,9 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
      */
     private function getCacheKey($className, $value)
     {
-        if (!is_string($value)) {
+        if (is_object($value)) {
+            $value = spl_object_hash($value);
+        } elseif (!is_string($value)) {
             $value = serialize($value);
         }
         return md5($className . $value);
@@ -484,14 +559,23 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     protected function getObjectProperties()
     {
         $reserved = $this->getReservedAttributes();
-        return array_filter(get_object_vars($this), function($var) use ($reserved) {
+        /*return array_filter(get_object_vars($this), function($var) use ($reserved) {
             $allowed = !isset($reserved[$var]);
             if ($this->__cursorFields) {
                 $allowed = isset($this->__cursorFields[$var]) && $allowed;
             }
 
             return $allowed;
-        }, ARRAY_FILTER_USE_KEY);
+        }, ARRAY_FILTER_USE_KEY);*/
+        $results = [];
+        foreach (get_object_vars($this) as $key => $value) {
+            $allowed = !isset($reserved[$key]);
+            if ($this->__cursorFields) {
+                $allowed = isset($this->__cursorFields[$key]) && $allowed;
+            }
+            $allowed && $results[$key] = $value;
+        }
+        return $results;
     }
 
     /**

@@ -10,6 +10,12 @@ use Vegas\ODM\Mapping\Mapper\MongoId;
 
 class MongoIdTest extends \PHPUnit_Framework_TestCase
 {
+    public function setUp()
+    {
+        parent::setUp();
+        $this->markTestIncomplete('This class is deprecated');
+    }
+
     public function testShouldMapStringToMongoId()
     {
         $id = '51b14c2de8e185801f000006';

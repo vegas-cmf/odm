@@ -10,6 +10,12 @@ use Vegas\ODM\Mapping\Mapper\MongoDate;
 
 class MongoDateTest extends \PHPUnit_Framework_TestCase
 {
+    public function setUp()
+    {
+        parent::setUp();
+        $this->markTestIncomplete('This class is deprecated');
+    }
+
     public function testShouldMapIntToMongoDate()
     {
         $date = time();
