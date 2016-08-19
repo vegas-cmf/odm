@@ -2,10 +2,14 @@ language: php
 
 php:
   - 5.6
+  - 7.0
 
 services:
   - mongodb
   - memcached
+
+env:
+  - PHALCON_VERSION="v3.0.0"
 
 before_install:
   - mysql -e "CREATE DATABASE IF NOT EXISTS vegas_test;" -uroot
@@ -16,9 +20,15 @@ before_install:
 
 before_script:
   - phpenv config-add travis/php.ini
-  - git clone -q --depth=1 https://github.com/phalcon/cphalcon.git -b v3.0.0
-  - (cd cphalcon/ext; export CFLAGS="-g3 -O1 -std=gnu90 -Wall -DZEPHIR_RELEASE=1"; $PHPIZE_BIN &> /dev/null && ./configure --silent --enable-phalcon &> /dev/null && make --silent -j4 &> /dev/null && sudo make --silent install && phpenv config-add ../tests/_ci/phalcon.ini)
-  - composer install --dev
+  - git clone -q --depth=1 https://github.com/phalcon/cphalcon.git -b ${PHALCON_VERSION}
+  - (cd cphalcon; bash tests/_ci/install_zephir.sh)
+  - '[[ "$TRAVIS_PHP_VERSION" == "7.0" ]] || (cd cphalcon; zephir generate)'
+  - '[[ "$TRAVIS_PHP_VERSION" != "7.0" ]] || (cd cphalcon; zephir generate --backend=ZendEngine3)'
+  - (export PRE_PHP_INCLUDES=`php-config --includes`; cd cphalcon/ext/; for file in `find kernel -name "*.h"`; do $CC "$file" -I. $PRE_PHP_INCLUDES -o "$file.ghc"; done)
+  - (cd cphalcon/ext; export CFLAGS="-g3 -O1 -std=gnu90 -Wall -DZEPHIR_RELEASE=1"; phpize &> /dev/null && ./configure --silent --enable-phalcon &> /dev/null && make --silent -j4 &> /dev/null && make --silent install)
+  - phpenv config-add ./tests/_ci/phalcon.ini &> /dev/null
+  - php --ri phalcon
+  - travis_retry composer install --dev --no-interaction
 
 script:
   - cp tests/config.sample.php tests/config.php
