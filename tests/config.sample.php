@@ -40,7 +40,7 @@ return [
                 ]
             ],
             'backend' => [
-                'driverClass' => '\Phalcon\Cache\Backend\Mongo',
+                'driverClass' => '\Vegas\ODM\Cache\Backend\ArrayCache',
                 'parameters' => [
                     'server' => 'localhost',
                     'db' => 'vegas_test',
