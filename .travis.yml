@@ -9,9 +9,7 @@ services:
   - memcached
 
 env:
-  - PHALCON_VERSION="v3.0.0"
-  - CC="ccache gcc"
-  - PATH="$PATH:~/bin"
+  - PHALCON_VERSION="v3.0.0" CC="ccache gcc" PATH="$PATH:~/bin"
 
 before_install:
   - mysql -e "CREATE DATABASE IF NOT EXISTS vegas_test;" -uroot
