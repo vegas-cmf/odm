@@ -2,12 +2,17 @@ language: php
 
 php:
   - 5.6
+  - 7.0
 
 services:
   - mongodb
   - memcached
 
+env:
+  - PHALCON_VERSION="v3.0.0" CC="ccache gcc" PATH="$PATH:~/bin"
+
 before_install:
+  - phpenv config-rm xdebug.ini
   - mysql -e "CREATE DATABASE IF NOT EXISTS vegas_test;" -uroot
   - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
   - echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
@@ -16,10 +21,11 @@ before_install:
 
 before_script:
   - phpenv config-add travis/php.ini
-  - git clone -q --depth=1 https://github.com/phalcon/cphalcon.git -b phalcon-v2.0.8
-  - (cd cphalcon/ext; export CFLAGS="-g3 -O1 -fno-delete-null-pointer-checks -Wall"; phpize && ./configure --enable-phalcon && make -j4 && sudo make install && phpenv config-add ../unit-tests/ci/phalcon.ini)
-  - curl -s http://getcomposer.org/installer | php
-  - php composer.phar install --dev
+  - git clone -q --depth=1 https://github.com/phalcon/cphalcon.git -b ${PHALCON_VERSION}
+  - (cd cphalcon/build; bash install &>/dev/null)
+  - phpenv config-add cphalcon/tests/_ci/phalcon.ini &> /dev/null
+  - php --ri phalcon
+  - travis_retry composer install --dev --no-interaction
 
 script:
   - cp tests/config.sample.php tests/config.php
