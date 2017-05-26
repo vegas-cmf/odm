@@ -287,6 +287,16 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
     }
 
     /**
+     *
+     */
+    protected function onConstruct()
+    {
+        if (empty($this->_id)) {
+            $this->_id = new \MongoId();
+        }
+    }
+
+    /**
      * @return bool|void
      * @throws \Exception
      */
@@ -306,7 +316,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
          */
         $collection = $connection->selectCollection($source);
 
-        /**
+        /**w
          * Check the dirty state of the current operation to update the current operation
          */
         $exists = parent::_exists($collection);
@@ -353,6 +363,7 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
         }
 
         $success = false;
+
         $status = $collection->save($data, ["w" => true]);
         if (is_array($status)) {
             if (isset($status['ok'])) {
@@ -421,7 +432,8 @@ class Collection extends \Phalcon\Mvc\Collection implements MapperInterface
                 '__is_mapped' => true,
                 '__is_property_mapped' => true,
                 '__operation' => true,
-                '__cursorFields' => true
+                '__cursorFields' => true,
+                '_dirtyState' => true
             ];
             self::$_reserved = $reserved;
         }
